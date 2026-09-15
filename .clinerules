@@ -1,0 +1,98 @@
+# Cline Rules — DentaQueue (abqms)
+
+## Read path (every task)
+
+1. `docs/SPEC.md` — the router. Never skip it; never expect detail there.
+2. `docs/index/business-rules.md` + `docs/index/roles-and-rbac.md` — always, before any code.
+3. The owning `docs/features/F-NN-*.md` for the task.
+4. Only then the `docs/api/*.md` and `docs/data-model/*.md` files that feature cites.
+5. `docs/requirements/open-questions.md` — if the task touches an `OQ-NN`/`D-NN`, read its entry.
+
+Do not read the whole `docs/` tree for a single-feature task. The router exists so you don't have to.
+
+## Where facts live (single source of truth)
+
+| Fact | Only place it may be written |
+|---|---|
+| Cross-cutting rules | `docs/index/business-rules.md` (`BR-NN`) |
+| Permissions | `docs/index/roles-and-rbac.md` |
+| Schema / fields / enums | `docs/data-model/*.md` |
+| Routes, requests/responses, error contract | `docs/api/*.md` |
+| Feature behaviour + acceptance criteria | `docs/features/F-NN-*.md` |
+| Constraints (perf, realtime, security) | `docs/requirements/non-functional.md` |
+| Undecided items | `docs/requirements/open-questions.md` |
+| Delivery status | `docs/traceability.md` |
+
+Never restate a fact in a second file — cite its ID (`BR-02`, `FR-BOOK-03`, `NFR-RT-01`).
+
+## Write path (touch list)
+
+When a requirement or decision changes, update **all** of:
+
+1. the owning feature file `docs/features/F-NN-*.md`
+2. the cited `docs/api/*.md` and/or `docs/data-model/*.md` file
+3. `docs/traceability.md` (feature board row + every affected `FR-*` row)
+4. `docs/requirements/open-questions.md` (mark `decided` with the answer and date)
+5. `docs/SPEC.md` — only if a new file was added (one link, never content)
+6. `docs/index/business-rules.md` — only if a rule itself changed
+
+## Build loop (one feature at a time)
+
+1. Pick the lowest unblocked feature in `docs/traceability.md` §1, respecting the suggested build order
+   (`F-01` is blocked until `D-01`…`D-04` in `open-questions.md` are answered).
+2. Resolve, or explicitly document, the feature's blockers before writing code.
+3. Implement **only** that feature's `FR-*` list.
+4. Write and run the tests named in its Test plan. No feature is "done" without them.
+5. Update the `traceability.md` rows to `tested`.
+6. Commit once, scoped to that feature: `chore(F-01): …` / `feat(F-07): walk-in registration (OCR+manual)`.
+7. Record the day's outcome in `docs/PROGRESS.md`.
+
+## Hard constraints for all code
+
+- RBAC enforced **server-side on every route** (`BR-07`, `NFR-RBAC-01`) — never client-side only.
+- Audit writes are **silent and non-blocking** (`BR-06`, `NFR-AUD-01`) — a logging failure must not fail
+  a request or leak into the UI.
+- Notifications are **automatic** (`NFR-AUTO-01`) — never add a manual trigger.
+- "Call next" stays a **single action** end-to-end (`NFR-UX-01`).
+- Doctors are **never** login users (`BR-08`).
+- Never commit secrets; configuration comes from environment variables (`FR-SCAF-02`).
+
+## Working notes
+
+- `docs/**`, `.clinerules` and `progress.txt` are intentionally **untracked local** working documents.
+  Do not `git add` them; expect `git status` to list them as untracked.
+- When the spec and an `OQ-NN` disagree, the `OQ-NN` wins as the statement of the problem: do not invent
+  an answer — record the decision in `open-questions.md` instead.
+# .clinerules
+
+## Tech Stack (fixed — do not substitute)
+- Frontend: Next.js 14+ (App Router), TailwindCSS (utility classes only, no CSS modules)
+- Backend: Node.js + Express.js (REST API, separate from Next.js server — decoupled architecture)
+- ORM: Prisma
+- Database: PostgreSQL (hosted on NeonDB)
+- Email: Resend
+- OCR: Node.js/Express-based IC detection (12-digit MyKad)
+- E2E Testing: Cypress only. No unit test framework mandated — do not introduce Jest/Vitest without asking.
+- Package manager: npm (assume unless a lockfile says otherwise — check before installing)
+- Version Control: Git, feature-branch workflow
+
+## Core Directives
+1. ALWAYS read `docs/SPEC.md` in full before writing or modifying code. It is the single source of truth for schema, roles, and workflows. Do not invent entities, fields, or endpoints not listed there — propose additions to SPEC.md first.
+2. ALWAYS check `docs/PROGRESS.md` at the start of a session to know what's done and what's next. Do not re-do completed steps.
+3. AFTER completing any milestone (a checklist item in PROGRESS.md, a schema change, a new module), update `docs/PROGRESS.md` immediately — check off the item and note the next logical task.
+4. If a schema change is needed, update the Prisma schema AND the ERD section of `docs/SPEC.md` in the same task — they must never drift apart.
+5. Never hardcode secrets (DB URL, Resend API key, JWT secret) — always use `.env` + `process.env`.
+6. Ignore `progress.txt`, its for own reference
+
+## Coding Standards
+- TypeScript preferred where the stack allows it (Next.js frontend, Express backend); strict null checks on.
+- Functions under 50 lines — decompose aggressively.
+- Comments explain "why", not "what" — no line-by-line narration.
+- Frontend and backend stay decoupled: frontend calls the Express API via a typed client layer, never imports backend/Prisma code directly.
+- RBAC (Patient vs Dental Assistant) must be enforced at the middleware/route level, not just hidden in the UI.
+- Dark-theme-friendly, utility-class-driven design system (per existing UI mockups: teal/green primary, clean card layouts).
+- Every new API route: validate input, enforce role, wrap DB calls in try/catch, log via the audit log pattern (see SPEC.md AuditLog entity).
+
+## Workflow
+- Small, reviewable commits. One logical change per commit.
+- When uncertain about a requirement, check SPEC.md → check PROGRESS.md → then ask, in that order.

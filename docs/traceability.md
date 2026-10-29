@@ -20,7 +20,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 
 | ID | Feature | spec | delivery | blocked by | FRs | Commit |
 |---|---|---|---|---|---|---|
-| `F-01` | Scaffold & Tooling | blocked | open | D-01…D-04 | 6 | `chore(F-01)` |
+| `F-01` | Scaffold & Tooling | complete | tested | — | 6 | `chore(F-01)` |
 | `F-02` | Patient Auth & Account Recovery | blocked | specified | OQ-01, OQ-12, OQ-22 | 9 | `feat(F-02)` |
 | `F-03` | Staff Provisioning & RBAC | complete | specified | — | 8 | `feat(F-03)` |
 | `F-04` | Appointment Types & PM Booking | blocked | specified | OQ-06, OQ-11, OQ-15, OQ-19 | 9 | `feat(F-04)` |
@@ -104,12 +104,12 @@ whether it is done. `Status` follows the same vocabulary.
 
 | ID | API / artifact | Test | Status |
 |---|---|---|---|
-| `FR-SCAF-01` | repo layout (`D-02`) | build | specified |
-| `FR-SCAF-02` | `.env` + example; no secrets | config test | specified |
-| `FR-SCAF-03` | test runner | suite runs | specified |
-| `FR-SCAF-04` | Prisma migration baseline | migration on empty DB | specified |
-| `FR-SCAF-05` | `GET /api/health` | smoke | specified |
-| `FR-SCAF-06` | README / setup docs | manual | specified |
+| `FR-SCAF-01` | repo layout (`D-02`) | build | tested |
+| `FR-SCAF-02` | `.env` + example; no secrets | config test | tested |
+| `FR-SCAF-03` | test runner | suite runs | tested |
+| `FR-SCAF-04` | Prisma migration baseline | migration on empty DB | tested |
+| `FR-SCAF-05` | `GET /api/health` | smoke | tested |
+| `FR-SCAF-06` | README / setup docs | manual | tested |
 
 ### `F-02` Patient Auth — `features/F-02-patient-auth.md`
 

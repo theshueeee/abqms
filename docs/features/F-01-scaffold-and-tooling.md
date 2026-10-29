@@ -1,9 +1,9 @@
 ---
 id: F-01
 title: Scaffold & Tooling
-spec_status: blocked
-delivery_status: open
-blocked_by: [D-01, D-02, D-03, D-04]
+spec_status: complete
+delivery_status: tested
+blocked_by: []
 parent: docs/SPEC.md
 related: [api/_conventions.md, requirements/open-questions.md]
 last_verified: 2026-09-15

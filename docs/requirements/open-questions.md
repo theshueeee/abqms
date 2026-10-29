@@ -242,10 +242,10 @@ These block `F-01` (scaffold). Everything else can proceed once these are answer
 
 | ID | Decision | Options | Why it matters |
 |---|---|---|---|
-| `D-01` | Frontend framework/approach for the patient portal and staff dashboard | e.g. React/Next.js, Vue, plain server-rendered | Determines the whole UI codebase; patient surface must be mobile-friendly with no install (`NFR-UX-02`) |
-| `D-02` | Repository layout | single app vs `apps/api` + `apps/web` | Determines build, test and deployment wiring for every later feature |
-| `D-03` | Test framework and tooling | unit/integration runner + E2E tool | Every feature's Test plan assumes a runner exists; `NFR-TEST-01` depends on it |
-| `D-04` | Deployment target and CI | where the app runs, how migrations apply on release | `F-01` (`FR-SCAF-04`), and how "tested" is enforced before a commit or deploy |
+| `D-01` | Frontend framework/approach for the patient portal and staff dashboard | **Decided 2026-10-29:** Next.js 14+ App Router with TailwindCSS. | Determines the whole UI codebase; patient surface must be mobile-friendly with no install (`NFR-UX-02`) |
+| `D-02` | Repository layout | **Decided 2026-10-29:** decoupled `apps/api` + `apps/web` workspace. | Determines build, test and deployment wiring for every later feature |
+| `D-03` | Test framework and tooling | **Decided 2026-10-29:** Cypress for E2E/smoke validation; no unit framework is added until required by a feature. | Every feature's Test plan assumes a runner exists; `NFR-TEST-01` depends on it |
+| `D-04` | Deployment target and CI | **Decided 2026-10-29:** NeonDB for PostgreSQL, Vercel for the web app, Render for the API, and release-time Prisma migrations; CI will run npm checks and Cypress against configured environments. | `F-01` (`FR-SCAF-04`), and how "tested" is enforced before a commit or deploy |
 | `D-05` | OCR provider | local OCR engine vs cloud vision API | Blocks `F-07`; also a privacy question (`OQ-20`, `NFR-SEC-05`) |
 | `D-06` | Email integration details | Resend account, sandbox vs live, from-address, key handling | Blocks `F-14`; must never commit secrets (`FR-SCAF-02`) |
 

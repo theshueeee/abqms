@@ -1,3 +1,13 @@
 progress.txt
+node_modules/
+.env
+.env.*
+!.env.example
+apps/api/dist/
+apps/web/.next/
+cypress/screenshots/
+cypress/videos/
 
 docs/PROGRESS.md
+node_modules
+.neon

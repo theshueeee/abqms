@@ -1,0 +1,2 @@
+-- Baseline migration for the empty foundation schema.
+-- Domain tables are introduced by their owning feature migrations.

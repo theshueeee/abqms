@@ -4,7 +4,7 @@ title: Data Model — Patient & Staff
 status: active
 parent: docs/SPEC.md
 related: [data-model/_overview.md, index/roles-and-rbac.md, index/business-rules.md]
-last_verified: 2026-09-15
+last_verified: 2026-11-04
 ---
 
 # Data Model — Patient & Staff
@@ -26,8 +26,7 @@ last_verified: 2026-09-15
 | `last_known_id_number` | String? | |
 | `created_at` / `updated_at` | DateTime | |
 
-**Gap:** there is no unique login identifier for IC or Matric No., although login is specified as
-"IC or Matric No. + password" — `OQ-01`.
+Patient login uses the unique email address plus password (`OQ-01`, decided 2026-10-29).
 
 ## `Staff`
 
@@ -47,3 +46,11 @@ last_verified: 2026-09-15
 represent a doctor under the current `role` enum. One of these must change:
 (a) add a non-login `doctor` role to the enum, (b) split out a `Doctor` entity, or
 (c) relabel bookings to reference an assistant-managed doctor resource table.
+
+## Authentication support records
+
+`Session` stores an opaque token hash, actor type, patient/staff reference, expiry, and optional
+revocation timestamp. `PasswordResetToken` stores only a hash of the single-use token, its account
+reference, expiry, and consumption timestamp. `LoginAttempt` stores the normalized login key,
+failure count, block expiry, and update timestamp so throttling is durable across API restarts.
+Passwords use Argon2id; see `OQ-12` and `OQ-22`.

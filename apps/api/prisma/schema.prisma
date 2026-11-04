@@ -7,3 +7,92 @@ datasource db {
   url      = env("DATABASE_URL")
   directUrl = env("DATABASE_URL_UNPOOLED")
 }
+
+enum AccountStatus {
+  active
+  suspended
+  flagged
+}
+
+enum StaffRole {
+  dental_assistant
+  admin
+}
+
+enum SessionActorType {
+  patient
+  staff
+}
+
+model Patient {
+  patient_id           String        @id @default(uuid()) @db.Uuid
+  full_name            String
+  email                String        @unique
+  phone_number         String
+  password_hash        String
+  date_of_birth        DateTime
+  reschedule_credits   Int           @default(5)
+  account_status       AccountStatus @default(active)
+  suspension_reason    String?
+  last_known_id_type   String?
+  last_known_id_number String?
+  created_at           DateTime      @default(now())
+  updated_at           DateTime      @updatedAt
+  sessions             Session[]
+  reset_tokens         PasswordResetToken[]
+}
+
+model Staff {
+  staff_id       String     @id @default(uuid()) @db.Uuid
+  full_name      String
+  email          String     @unique
+  password_hash  String
+  phone_number   String
+  role           StaffRole
+  is_active      Boolean    @default(true)
+  provisioned_by String?    @db.Uuid
+  provisioner    Staff?     @relation("StaffProvisioner", fields: [provisioned_by], references: [staff_id])
+  provisioned    Staff[]    @relation("StaffProvisioner")
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @updatedAt
+  sessions       Session[]
+  reset_tokens   PasswordResetToken[]
+}
+
+model Session {
+  session_id  String           @id @default(uuid()) @db.Uuid
+  token_hash  String           @unique
+  actor_type  SessionActorType
+  patient_id  String?         @db.Uuid
+  staff_id    String?         @db.Uuid
+  expires_at  DateTime
+  revoked_at  DateTime?
+  created_at  DateTime         @default(now())
+  patient     Patient?         @relation(fields: [patient_id], references: [patient_id])
+  staff       Staff?           @relation(fields: [staff_id], references: [staff_id])
+
+  @@index([patient_id])
+  @@index([staff_id])
+  @@index([expires_at])
+}
+
+model PasswordResetToken {
+  token_id    String    @id @default(uuid()) @db.Uuid
+  token_hash  String    @unique
+  patient_id  String?   @db.Uuid
+  staff_id    String?   @db.Uuid
+  expires_at  DateTime
+  consumed_at DateTime?
+  created_at  DateTime  @default(now())
+  patient     Patient?  @relation(fields: [patient_id], references: [patient_id])
+  staff       Staff?    @relation(fields: [staff_id], references: [staff_id])
+
+  @@index([expires_at])
+}
+
+model LoginAttempt {
+  attempt_key   String   @id
+  failures      Int      @default(0)
+  blocked_until DateTime?
+  updated_at    DateTime @updatedAt
+}

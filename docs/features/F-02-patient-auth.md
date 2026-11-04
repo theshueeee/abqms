@@ -1,13 +1,13 @@
 ---
 id: F-02
 title: Patient Auth & Account Recovery
-spec_status: blocked
-delivery_status: open
-blocked_by: [OQ-01, OQ-12, OQ-22]
+spec_status: specified
+delivery_status: built
+blocked_by: []
 parent: docs/SPEC.md
 related: [api/auth.md, data-model/patient-staff.md, features/F-03-staff-provisioning-rbac.md]
 rules: [BR-07]
-last_verified: 2026-09-15
+last_verified: 2026-11-04
 ---
 
 # F-02 — Patient Auth & Account Recovery
@@ -27,10 +27,8 @@ Staff account creation (`F-03`), session UI, email template design (`F-14`).
 
 ## Blockers
 
-- `OQ-01` — no unique IC / Matric No. column exists, yet login is specified as **IC or Matric No. +
-  password**. Login cannot be built as written until the identifier model is decided.
-- `OQ-12` — no password-reset token table exists.
-- `OQ-22` — session vs JWT, password hashing algorithm, password policy.
+Authentication decisions were recorded on 2026-10-29: email login, database-backed sessions,
+Argon2id with a 12-character minimum, and hashed single-use reset tokens.
 
 ## Requirements
 
@@ -62,15 +60,21 @@ Staff account creation (`F-03`), session UI, email template design (`F-14`).
 
 | Level | What | Fixture |
 |---|---|---|
-| Unit | password hashing round-trip; token expiry boundaries | none |
+| Unit | password hashing round-trip; opaque token hashing and uniqueness | `apps/api/test/auth.security.test.ts` |
 | Integration | signup → login → reset → login cycle | `patient-auth-user` |
 | Integration | rate limit trips after N failures | `patient-auth-ratelimit` |
 | Negative | duplicate email; expired token; reused token; suspended login | `patient-suspended` |
 
 ## Open questions
 
-`OQ-01` (login identifier) · `OQ-12` (reset token storage) · `OQ-19` (records route, error contract) ·
-`OQ-22` (hashing/session/policy).
+`OQ-19` (records route, error contract).
+
+## Checkpoint notes (2026-11-04)
+
+Argon2id password hashing and opaque token generation now have passing unit coverage. Sessions use
+production-aware secure cookies, failed-login throttling is database-backed, and reset-token
+delivery is isolated behind an adapter. Integration coverage for the full database-backed auth
+flows remains follow-up work before this feature can move from `built` to `tested`.
 
 ## Commit scope
 

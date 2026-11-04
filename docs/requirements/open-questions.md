@@ -22,12 +22,14 @@ it).
 
 ## OQ-01 — No unique IC / Matric No. login identifier
 
+**Status: decided 2026-10-29.** Patient authentication uses the unique email address plus password.
+IC/Matric values remain OCR-reused identity data and are not login credentials.
+
 **Problem:** Login is specified as *IC or Matric No. + password*, but `Patient` has only `email`
 (unique) plus non-unique `last_known_id_type` / `last_known_id_number`. There is no column to
 authenticate against.
 **Affects:** `F-02` (`FR-AUTH-02` blocks) · `data-model/patient-staff.md`
-**Decision needed:** add a unique login-identifier column (plus normalisation rules for MyKad vs
-Passport vs Matric), or restrict login to email.
+**Decision needed:** closed by restricting login to email.
 
 ## OQ-02 — Doctors cannot exist in the staff model
 
@@ -113,12 +115,16 @@ manual-review-only.
 
 ## OQ-12 — Missing tables for reset tokens, sessions and email delivery
 
+**Status: decided 2026-10-29 for F-02.** Add database-backed `Session` and
+`PasswordResetToken` records. Sessions use opaque hashed tokens in secure HTTP-only cookies;
+reset tokens are opaque, hashed, single-use, and expiring. Notification delivery remains deferred
+to `F-14`.
+
 **Problem:** Forgot/reset password is specified but there is no token table; session strategy is
 undecided with no store; notifications have no delivery log, so failures and duplicates are invisible
 and retry is undefined.
 **Affects:** `F-02` (`FR-AUTH-05`), `F-14` (`FR-NOTIF-05`)
-**Decision needed:** add `PasswordResetToken`, a session/refresh store if used, and `NotificationLog`
-with a status field plus an idempotency key.
+**Decision needed:** closed for authentication; `NotificationLog` remains an `F-14` decision.
 
 ## OQ-13 — Queue ordering has no tie-break and no concurrency guard
 
@@ -217,6 +223,11 @@ failure → manual-fallback contract.
 **Decision needed:** pin each capability to a role in `index/roles-and-rbac.md`, which is authoritative.
 
 ## OQ-22 — No measurable non-functional targets
+
+**Status: decided 2026-10-29 for F-02.** Passwords use Argon2id with a minimum length of 12
+characters. Authentication returns generic failures, applies a 15-minute per-account/IP failed
+login block after five failures, and uses server-side database sessions. Remaining NFR targets stay
+open for the features that need them.
 
 **Problem:** The spec states five qualitative constraints (`NFR-RT-01`, `NFR-AUTO-01`, `NFR-AUD-01`,
 `NFR-RBAC-01`, `NFR-UX-01`) but no numbers: no latency, capacity, availability, security policy

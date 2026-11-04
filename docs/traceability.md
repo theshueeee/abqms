@@ -4,7 +4,7 @@ title: Traceability Matrix
 status: active
 parent: docs/SPEC.md
 related: [requirements/open-questions.md, requirements/non-functional.md]
-last_verified: 2026-09-15
+last_verified: 2026-11-04
 ---
 
 # Traceability Matrix
@@ -21,8 +21,8 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | ID | Feature | spec | delivery | blocked by | FRs | Commit |
 |---|---|---|---|---|---|---|
 | `F-01` | Scaffold & Tooling | complete | tested | — | 6 | `chore(F-01)` |
-| `F-02` | Patient Auth & Account Recovery | blocked | specified | OQ-01, OQ-12, OQ-22 | 9 | `feat(F-02)` |
-| `F-03` | Staff Provisioning & RBAC | complete | specified | — | 8 | `feat(F-03)` |
+| `F-02` | Patient Auth & Account Recovery | complete | built | OQ-19 (records route); integration auth tests | 9 | `feat(F-02)` |
+| `F-03` | Staff Provisioning & RBAC | complete | built | integration RBAC tests | 8 | `feat(F-03)` |
 | `F-04` | Appointment Types & PM Booking | blocked | specified | OQ-06, OQ-11, OQ-15, OQ-19 | 9 | `feat(F-04)` |
 | `F-05` | Check-in & Late Handling | blocked | specified | OQ-14, OQ-21 | 6 | `feat(F-05)` |
 | `F-06` | Reschedule & Cancellation | blocked | specified | OQ-03, OQ-09, OQ-19 | 8 | `feat(F-06)` |
@@ -66,11 +66,21 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `NFR-UX-02` | Browser-based, mobile-friendly, no install | all UI features | specified |
 | `NFR-PERF-01…03`, `NFR-SEC-01…05`, `NFR-TEST-01`, `NFR-UX-03`, `NFR-OPS-01` | Not yet written | — | ⚠ undefined (`OQ-22`) |
 
-## 4. Open-question and decision coverage
+## 4. Authentication checkpoint (2026-11-04)
+
+- Validation passed: Prisma Client generation, API typecheck/build, API security unit tests, and
+  the workspace test command.
+- The authentication checkpoint remains `built`, not `tested` or `shipped`, because database-backed
+  endpoint integration tests and the patient records route remain outstanding.
+- `npm audit --omit=dev --audit-level=high` reports existing high/critical advisories in Next.js,
+  PostCSS, Zod, and Prisma tooling. Automatic remediation requires breaking dependency upgrades,
+  so those upgrades are deferred to a separate dependency-maintenance change.
+
+## 5. Open-question and decision coverage
 
 | ID | Affects | Status |
 |---|---|---|
-| `OQ-01` | `F-02` | open |
+| `OQ-01` | `F-02` | decided |
 | `OQ-02` | `F-03`, `F-04`, `F-07`, `F-09`, `F-11`, `F-16` | open |
 | `OQ-03` | `F-06`, `F-12`, `F-13` | open |
 | `OQ-04` | `F-07` | open |
@@ -81,7 +91,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `OQ-09` | `F-06` | open |
 | `OQ-10` | `F-12`, `F-13` | open |
 | `OQ-11` | `F-04`, `F-05`, `F-09` | open |
-| `OQ-12` | `F-02`, `F-14` | open |
+| `OQ-12` | `F-02`, `F-14` | decided for F-02; open for F-14 |
 | `OQ-13` | `F-08`, `F-09`, `F-10` | open |
 | `OQ-14` | `F-05`, `F-07`, `F-13`, `F-14` | open |
 | `OQ-15` | `F-04`, `F-07`, `F-13`, `F-16` | open |
@@ -91,11 +101,11 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `OQ-19` | `F-02`, `F-04`, `F-06`, `F-10`, all | open |
 | `OQ-20` | `F-07`, `F-14` | open |
 | `OQ-21` | `F-05`, `F-12`, `F-13`, `F-15` | open |
-| `OQ-22` | every feature | open |
+| `OQ-22` | every feature | decided for F-02; open for remaining NFRs |
 | `OQ-23` | `F-07`, `F-02` | open |
 | `D-01`…`D-06` | `F-01` (+ `F-07`, `F-14`) | open |
 
-## 5. Functional-requirement index
+## 6. Functional-requirement index
 
 Statements live in the owning feature file; this index only tracks where each requirement lands and
 whether it is done. `Status` follows the same vocabulary.
@@ -118,7 +128,7 @@ whether it is done. `Status` follows the same vocabulary.
 | `FR-AUTH-01` | `POST /auth/signup` | integration signup→login | specified ⚠ |
 | `FR-AUTH-02` | `POST /auth/login` | integration (blocked: `OQ-01`) | open ⚠ |
 | `FR-AUTH-03` | `POST /auth/login` | role resolved server-side | specified |
-| `FR-AUTH-04` | `password_hash` | hashing round-trip unit | specified |
+| `FR-AUTH-04` | `password_hash` | hashing round-trip unit | tested |
 | `FR-AUTH-05` | `POST /auth/forgot-password` | token lifecycle unit | specified ⚠ |
 | `FR-AUTH-06` | `POST /auth/reset-password` | reuse/expiry negatives | specified |
 | `FR-AUTH-07` | `POST /auth/login` | rate-limit integration | specified |
@@ -308,7 +318,7 @@ whether it is done. `Status` follows the same vocabulary.
 
 ---
 
-## 6. How to update this file
+## 7. How to update this file
 
 1. **Pick a feature** from the board (`§1`). Build only what it specifies.
 2. **Resolve its blockers first**, or record explicitly that the feature is proceeding with the

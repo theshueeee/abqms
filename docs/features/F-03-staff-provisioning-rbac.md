@@ -2,13 +2,13 @@
 id: F-03
 title: Staff Provisioning & RBAC Enforcement
 spec_status: complete
-delivery_status: open
+delivery_status: built
 blocked_by: []
 parent: docs/SPEC.md
 related: [api/auth.md, index/roles-and-rbac.md, api/_conventions.md]
 rules: [BR-07, BR-08]
 depends_on: [F-02]
-last_verified: 2026-09-15
+last_verified: 2026-11-04
 ---
 
 # F-03 — Staff Provisioning & RBAC Enforcement
@@ -66,6 +66,12 @@ Patient signup (`F-02`), the business actions those staff perform (later feature
 
 `OQ-02` — does not block staff provisioning itself, but decides how the "doctor resource" that
 bookings reference is modelled, which later features depend on.
+
+## Checkpoint notes (2026-11-04)
+
+The shared session guard and role checks typecheck successfully. Database-backed login throttling
+is now shared across API instances; admin provisioning and guard integration tests remain
+follow-up work before this feature can move from `built` to `tested`.
 
 ## Commit scope
 

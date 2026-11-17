@@ -4,7 +4,7 @@ title: Data Model — Patient & Staff
 status: active
 parent: docs/SPEC.md
 related: [data-model/_overview.md, index/roles-and-rbac.md, index/business-rules.md]
-last_verified: 2026-11-04
+last_verified: 2026-11-17
 ---
 
 # Data Model — Patient & Staff

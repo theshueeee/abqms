@@ -2,12 +2,12 @@
 id: F-02
 title: Patient Auth & Account Recovery
 spec_status: specified
-delivery_status: built
+delivery_status: tested
 blocked_by: []
 parent: docs/SPEC.md
 related: [api/auth.md, data-model/patient-staff.md, features/F-03-staff-provisioning-rbac.md]
 rules: [BR-07]
-last_verified: 2026-11-04
+last_verified: 2026-11-17
 ---
 
 # F-02 — Patient Auth & Account Recovery
@@ -64,17 +64,19 @@ Argon2id with a 12-character minimum, and hashed single-use reset tokens.
 | Integration | signup → login → reset → login cycle | `patient-auth-user` |
 | Integration | rate limit trips after N failures | `patient-auth-ratelimit` |
 | Negative | duplicate email; expired token; reused token; suspended login | `patient-suspended` |
+| E2E | signup → login → logout through the running API | `cypress/e2e/auth.cy.ts` |
 
 ## Open questions
 
 `OQ-19` (records route, error contract).
 
-## Checkpoint notes (2026-11-04)
+## Checkpoint notes (2026-11-17)
 
 Argon2id password hashing and opaque token generation now have passing unit coverage. Sessions use
 production-aware secure cookies, failed-login throttling is database-backed, and reset-token
-delivery is isolated behind an adapter. Integration coverage for the full database-backed auth
-flows remains follow-up work before this feature can move from `built` to `tested`.
+delivery is isolated behind an adapter. Database-backed integration coverage now passes for signup,
+sessions, reset-token consumption, and login throttling. The patient records route remains
+unspecified under `OQ-19`, so the feature is tested but not shipped.
 
 ## Commit scope
 

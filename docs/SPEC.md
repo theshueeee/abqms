@@ -26,6 +26,8 @@ Hard cap: 15 patients/doctor/day (BR-01).** Details: `index/business-rules.md`.
 | If you are working on… | Read, in this order | Notes |
 |---|---|---|
 | **Anything at all** | `index/business-rules.md` → `index/roles-and-rbac.md` | Always first, no exceptions |
+| **Frontend implementation plan** | `FRONTEND-BUILD-PLAN.md` → the owning feature/API files | Responsive Figma-driven vertical-slice delivery |
+| **Frontend frame implementation** | `frontend/_overview.md` → `frontend/_design-system.md` → `frontend/pages/` | One specification per inspected Figma frame |
 | A specific feature | `features/F-NN-*.md` → the `api/` and `data-model/` files it cites | Feature files are the delivery units |
 | End-to-end user behaviour | `workflows/patient-journey.md`, `workflows/assistant-journey.md` | Narrative only; deep-links to features |
 | Database / Prisma schema | `data-model/_overview.md` → `data-model/<domain>.md` | Schema facts live only here |

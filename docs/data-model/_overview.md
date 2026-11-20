@@ -4,7 +4,7 @@ title: Data Model Overview (ERD)
 status: active
 parent: docs/SPEC.md
 related: [data-model/patient-staff.md, data-model/scheduling.md, data-model/queue.md, data-model/moderation.md, data-model/audit-notification.md]
-last_verified: 2026-09-15
+last_verified: 2026-11-20
 ---
 
 # Data Model — Overview
@@ -39,8 +39,8 @@ by domain; this file holds the ERD, the relationship summary and the conventions
 - Every entity carries `created_at` / `updated_at` unless noted otherwise.
 - Timestamps are stored as `DateTime`; **timezone policy is undecided** — `OQ-14`.
 - Enums are Prisma enums; the current value sets are low-level facts and changing one is a spec change.
-- Soft-delete policy is **undecided** — `OQ-07` (currently `TimeBlock` has no soft-delete field but a
-  `DELETE` endpoint exists).
+- `TimeBlock` uses `deleted_at` soft deletion; released blocks are excluded from normal reads and
+  availability checks while remaining auditable (`OQ-07`).
 
 ## Known model-level conflicts
 

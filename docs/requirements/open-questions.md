@@ -4,7 +4,7 @@ title: Open Questions & Pending Decisions
 status: active
 parent: docs/SPEC.md
 related: [index/business-rules.md, requirements/non-functional.md, traceability.md]
-last_verified: 2026-09-15
+last_verified: 2026-11-20
 ---
 
 # Open Questions & Pending Decisions
@@ -75,8 +75,20 @@ override mechanism is specified, and no clinic-hours configuration exists.
 **Problem:** `TimeBlock` has no soft-delete/active flag, yet `DELETE /timeblocks/:id` exists. A hard
 delete removes the explanation for a calendar that is now open.
 **Affects:** `F-11` (`FR-TB-06`) · `F-15`
-**Decision needed:** soft delete (`is_active` / `deleted_at`) versus hard delete plus a compensating
-audit row.
+**Status: decided 2026-11-20.** Use `deleted_at` soft deletion. Dental Assistants release blocks
+through a confirmation step; released blocks are excluded from normal time-block results but remain
+represented for audit history.
+
+**Rules:** Time ranges use half-open intervals `[start_datetime, end_datetime)`, so a block ending
+at 15:00 may coexist with an appointment starting at 15:00. A time block cannot overlap an
+appointment whose status is `confirmed`, and an appointment cannot transition to `confirmed` if it
+overlaps an active time block. These checks use the same doctor-day transaction lock so block
+creation and appointment confirmation cannot race.
+The appointment status model is unchanged. Release does not cancel or alter appointments.
+
+**Decision:** `DELETE /timeblocks/:id` releases the block, records an audit event, and returns
+`404` when the block is missing or already released. Audit failure remains non-blocking under
+`BR-06`.
 
 ## OQ-08 — Audit log cannot express non-HTTP events
 

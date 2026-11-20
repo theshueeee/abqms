@@ -30,7 +30,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `F-08` | Live Queue View (patient-facing) | blocked | specified | OQ-16, OQ-17, OQ-18 | 7 | `feat(F-08)` |
 | `F-09` | Master View & Call-Next | blocked | specified | OQ-05, OQ-11, OQ-13, OQ-18 | 9 | `feat(F-09)` |
 | `F-10` | Emergency Override | blocked | specified | OQ-13, OQ-19 | 7 | `feat(F-10)` |
-| `F-11` | Time-Block Management | blocked | specified | OQ-07 | 7 | `feat(F-11)` |
+| `F-11` | Time-Block Management | specified | specified | — | 7 | `feat(F-11)` |
 | `F-12` | Flagging & Suspension Review | blocked | specified | OQ-10, OQ-21 | 9 | `feat(F-12)` |
 | `F-13` | Analytics Dashboard | blocked | specified | OQ-17, OQ-21, OQ-22 | 8 | `feat(F-13)` |
 | `F-14` | Notifications | blocked | specified | OQ-12, OQ-14, D-06 | 8 | `feat(F-14)` |
@@ -86,7 +86,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `OQ-04` | `F-07` | open |
 | `OQ-05` | `F-09` | open |
 | `OQ-06` | `F-04`, `F-05`, `F-07` | open |
-| `OQ-07` | `F-11`, `F-15` | open |
+| `OQ-07` | `F-11`, `F-15` | decided |
 | `OQ-08` | `F-15`, `F-12`, `F-14` | open |
 | `OQ-09` | `F-06` | open |
 | `OQ-10` | `F-12`, `F-13` | open |
@@ -248,7 +248,7 @@ whether it is done. `Status` follows the same vocabulary.
 | `FR-TB-03` | → `F-04` | availability integration | specified |
 | `FR-TB-04` | free-text reason | unit | specified |
 | `FR-TB-05` | `GET /timeblocks` | filter integration | specified |
-| `FR-TB-06` | `DELETE /timeblocks/:id` | integration (per `OQ-07`) | open  |
+| `FR-TB-06` | `DELETE /timeblocks/:id` | release integration + audit | specified |
 | `FR-TB-07` | role guard | patient-refused negative | specified |
 
 ### `F-12` Flagging & Suspension — `features/F-12-flagging-and-suspension.md`

@@ -4,7 +4,7 @@ title: Data Model — Scheduling
 status: active
 parent: docs/SPEC.md
 related: [data-model/_overview.md, index/business-rules.md]
-last_verified: 2026-09-15
+last_verified: 2026-11-20
 ---
 
 # Data Model — Scheduling
@@ -63,8 +63,12 @@ Feeds `BR-02` evaluation (rolling 30-day count) — `OQ-03`.
 | `block_reason` | String | e.g. "Annual Leave", "Academic Duty" |
 | `notes` | String? | |
 | `created_at` | DateTime | |
+| `deleted_at` | DateTime? | Set when a Dental Assistant releases the block; null means active |
 
-**Gap:** no `is_active` / soft-delete field, yet `DELETE /timeblocks/:id` exists — `OQ-07`.
+Time ranges use half-open intervals `[start_datetime, end_datetime)`. Released blocks are excluded
+from availability, overlap checks, and normal time-block listings.
+They remain available through audit history. A block cannot overlap an appointment with status
+`confirmed`, and appointment confirmation cannot overlap an active block (`OQ-07`).
 
 ## Slot generation (unspecified)
 

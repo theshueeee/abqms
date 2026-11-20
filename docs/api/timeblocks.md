@@ -4,7 +4,7 @@ title: API — Calendar / Time-Blocks
 status: active
 parent: docs/SPEC.md
 related: [api/_conventions.md, data-model/scheduling.md, features/F-11-timeblock-management.md]
-last_verified: 2026-09-15
+last_verified: 2026-11-20
 ---
 
 # API — Calendar / Time-Blocks
@@ -22,8 +22,13 @@ last_verified: 2026-09-15
   the same doctor.
 - `FR-TB-03` Blocked windows are excluded from bookable-slot generation (`FR-BOOK-05`).
 - `FR-TB-04` `block_reason` is free text (e.g. "Annual Leave", "Academic Duty") with optional `notes`.
-- `FR-TB-05` Deleting a block is a hard delete today; whether it should be a soft delete is undecided
-  (`OQ-07`).
+- `FR-TB-05` `GET /timeblocks` returns active blocks only; released blocks have `deleted_at` set
+  and are excluded from availability and overlap checks.
+- `FR-TB-06` `DELETE /timeblocks/:id` releases a block after staff confirmation, records an audit
+  event, and returns `404` for an unknown or already released block.
+- Block creation and appointment confirmation use the same doctor-day transaction lock. A block
+  cannot overlap a `confirmed` appointment, and an appointment cannot be confirmed inside an active
+  block.
 
 ## Notes
 

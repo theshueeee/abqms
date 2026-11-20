@@ -1,13 +1,12 @@
 ---
 id: F-11
 title: Time-Block Management
-spec_status: blocked
+spec_status: specified
 delivery_status: open
-blocked_by: [OQ-07]
 parent: docs/SPEC.md
 related: [api/timeblocks.md, data-model/scheduling.md, features/F-04-appointment-types-and-booking.md]
 depends_on: [F-03]
-last_verified: 2026-09-15
+last_verified: 2026-11-20
 ---
 
 # F-11 — Time-Block Management
@@ -24,22 +23,21 @@ Creating, listing and deleting blocks; feeding exclusion into slot availability.
 
 Slot generation itself (`F-04`), staff provisioning (`F-03`).
 
-## Blockers
+## Decision
 
-- `OQ-07` — `TimeBlock` has **no soft-delete or active flag**, yet the API exposes
-  `DELETE /timeblocks/:id`. A hard delete destroys the record of why availability vanished, which
-  conflicts with the audit expectations of `BR-06`/`F-15`.
+- `OQ-07` is resolved with `deleted_at` soft deletion. The Dental Assistant confirms a release,
+  active listings and availability exclude released blocks, and the release is audited.
 
 ## Requirements
 
 | ID | Requirement | API |
 |---|---|---|
 | `FR-TB-01` | Creating a block records `doctor_staff_id` and `blocked_by_staff_id` | `POST /timeblocks` |
-| `FR-TB-02` | `start_datetime < end_datetime` is enforced; overlapping blocks for the same doctor are refused | `POST /timeblocks` |
+| `FR-TB-02` | `start_datetime < end_datetime` is enforced; overlapping blocks or `confirmed` appointments for the same doctor are refused | `POST /timeblocks` |
 | `FR-TB-03` | Blocks are excluded from bookable-slot generation (`FR-BOOK-05`) | → `F-04` |
 | `FR-TB-04` | `block_reason` is free text with optional `notes` | `POST /timeblocks` |
 | `FR-TB-05` | Blocks can be listed, filtered by `doctor_staff_id` | `GET /timeblocks` |
-| `FR-TB-06` | Deleting a block is refused for a non-existent id and is recorded in the audit trail; hard vs soft delete per `OQ-07` | `DELETE /timeblocks/:id` |
+| `FR-TB-06` | Releasing a block requires staff confirmation, sets `deleted_at`, excludes it from normal results, and is recorded in the audit trail; unknown or already released ids return `404` | `DELETE /timeblocks/:id` |
 | `FR-TB-07` | Only staff may create or delete blocks; patients may read availability generally | `POST`/`DELETE` |
 
 ## Acceptance criteria
@@ -48,22 +46,26 @@ Slot generation itself (`F-04`), staff provisioning (`F-03`).
    doctor, **then** it is refused.
 2. **Given** a block covering 14:00–15:00, **when** availability is generated, **then** no slot overlaps
    that window.
-3. **Given** a block, **when** it is deleted, **then** availability returns and the deletion is present in
+3. **Given** a block, **when** it is released after confirmation, **then** availability returns and the release is present in
    the audit trail.
 4. **Given** a patient session, **when** it posts a block, **then** the response is `403`.
+5. **Given** a confirmed appointment, **when** a block overlaps it, **then** block creation is refused.
+6. **Given** an active block, **when** an appointment is confirmed inside it, **then** confirmation is refused.
 
 ## Test plan
 
 | Level | What | Fixtures |
 |---|---|---|
 | Unit | overlap detection across boundary cases (touching ends, containment) | none |
-| Integration | create → availability shrinks; delete → availability returns | `doctor-slots` |
-| Integration | audit row written on create and delete | `staff-assistant` |
-| Negative | patient actor; inverted date range; unknown id | `patient-booker` |
+| Integration | create → availability shrinks; release → availability returns | `doctor-slots` |
+| Integration | audit row written on create and release | `staff-assistant` |
+| Integration | confirmed appointment conflicts with block creation and confirmation | `doctor-slots` |
+| Concurrency | block creation and appointment confirmation use the doctor-day lock | `doctor-slots` |
+| Negative | patient actor; inverted date range; unknown or already released id | `patient-booker` |
 
 ## Open questions
 
-`OQ-07`.
+Resolved by `OQ-07`.
 
 ## Commit scope
 

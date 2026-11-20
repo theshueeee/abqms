@@ -35,7 +35,7 @@ Book a follow-up if needed, otherwise end. → `F-16-followup-booking.md`
 
 | Stream | Feature | Open questions |
 |---|---|---|
-| Time-block management (lock the calendar for leave / academic duties) | `F-11-timeblock-management.md` | `OQ-07` |
+| Time-block management (lock/release the calendar for leave / academic duties) | `F-11-timeblock-management.md` | — |
 | Compliance review: flag → review (suspicious cancellations / excessive reschedules / override abuse) → suspend or clear | `F-12-flagging-and-suspension.md` | `OQ-10`, `OQ-21` |
 | Analytics dashboard (traffic, no-show rate, peak hours) | `F-13-analytics.md` | `OQ-17`, `OQ-21` |
 | Reading the audit trail | `F-15-audit-logging.md` | `OQ-08` |

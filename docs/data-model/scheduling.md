@@ -30,7 +30,7 @@ Entities: `AppointmentType`, `Appointment`, `RescheduleLog`, `TimeBlock`.
 | `doctor_staff_id` | FK → `Staff` | The assigned "doctor" record, managed as a staff-linked resource, not a login role (`OQ-02`) |
 | `scheduled_datetime` | DateTime | |
 | `booking_channel` | Enum(`online`, `walk_in`) | |
-| `status` | Enum(`pending`, `confirmed`, `checked_in`, `completed`, `cancelled`, `no_show`) | `pending` → `confirmed` transition rules undecided — `OQ-11` |
+| `status` | Enum(`pending`, `confirmed`, `checked_in`, `completed`, `cancelled`, `no_show`) | Authoritative status machine; successful F-04 bookings start as `confirmed` — `OQ-11` |
 | `is_follow_up` | Boolean | |
 | `parent_appointment_id` | FK → `Appointment` (self-ref, nullable) | Follow-up chains |
 | `reschedule_count` | Int | Duplicates `Patient.reschedule_credits` — `OQ-03` |
@@ -70,7 +70,8 @@ from availability, overlap checks, and normal time-block listings.
 They remain available through audit history. A block cannot overlap an appointment with status
 `confirmed`, and appointment confirmation cannot overlap an active block (`OQ-07`).
 
-## Slot generation (unspecified)
+## Slot generation
 
-`AppointmentType.default_duration_minutes` + `BR-01` (15/doctor/day) + `TimeBlock` exclusions +
-overlap prevention must jointly define bookable slots. No algorithm is specified — `OQ-15`.
+PM slots start every 30 minutes from 12:00 local time until a selected appointment duration fits
+before 17:00. Active `TimeBlock` rows and existing pending/confirmed/checked-in appointments remove
+overlapping slots. The 15-patient-per-day cap is removed by `OQ-15`.

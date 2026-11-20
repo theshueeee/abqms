@@ -25,7 +25,7 @@ file rather than restating behaviour. Backend is **Express REST, prefix `/api`**
 | Filtering | `GET /appointments` filters by date/doctor for staff only | Fixed |
 | Rate limiting | Undecided, but required on login and OCR | `OQ-19` |
 | Versioning | Undecided | `OQ-19` |
-| Transport/date format | ISO 8601; timezone policy undecided | `OQ-14` |
+| Transport/date format | ISO 8601; F-04 uses `Asia/Kuala_Lumpur` for PM slot local boundaries | `OQ-06`, `OQ-14` |
 
 ## Read-only reference data
 
@@ -35,7 +35,7 @@ The booking UI cannot function without these lists, but **no endpoint is specifi
 | Needed by | Suggested route | Content source |
 |---|---|---|
 | Slot/appointment picker | `GET /appointment-types` | `data-model/scheduling.md` |
-| Doctor picker | `GET /doctors` | `OQ-02` decides the source |
+| Doctor picker | `GET /doctors` | Existing active staff records are used by F-04; `OQ-02` remains open for the authoritative doctor model |
 | Cancellation flow | `GET /cancellation-reasons` | `data-model/moderation.md` |
 
 ## Response/route inventory

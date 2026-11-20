@@ -23,14 +23,14 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `F-01` | Scaffold & Tooling | complete | tested | — | 6 | `chore(F-01)` |
 | `F-02` | Patient Auth & Account Recovery | complete | tested | OQ-19 (records route) | 9 | `feat(F-02)` |
 | `F-03` | Staff Provisioning & RBAC | complete | tested | — | 8 | `feat(F-03)` |
-| `F-04` | Appointment Types & PM Booking | blocked | specified | OQ-06, OQ-11, OQ-15, OQ-19 | 9 | `feat(F-04)` |
+| `F-04` | Appointment Types & PM Booking | complete | tested | — | 9 | `feat(F-04)` |
 | `F-05` | Check-in & Late Handling | blocked | specified | OQ-14, OQ-21 | 6 | `feat(F-05)` |
 | `F-06` | Reschedule & Cancellation | blocked | specified | OQ-03, OQ-09, OQ-19 | 8 | `feat(F-06)` |
 | `F-07` | Walk-in Registration (OCR + Manual) | blocked | specified | OQ-04, OQ-16, OQ-20, D-05 | 10 | `feat(F-07)` |
 | `F-08` | Live Queue View (patient-facing) | blocked | specified | OQ-16, OQ-17, OQ-18 | 7 | `feat(F-08)` |
 | `F-09` | Master View & Call-Next | blocked | specified | OQ-05, OQ-11, OQ-13, OQ-18 | 9 | `feat(F-09)` |
 | `F-10` | Emergency Override | blocked | specified | OQ-13, OQ-19 | 7 | `feat(F-10)` |
-| `F-11` | Time-Block Management | specified | specified | — | 7 | `feat(F-11)` |
+| `F-11` | Time-Block Management | specified | built | — | 7 | `feat(F-11)` |
 | `F-12` | Flagging & Suspension Review | blocked | specified | OQ-10, OQ-21 | 9 | `feat(F-12)` |
 | `F-13` | Analytics Dashboard | blocked | specified | OQ-17, OQ-21, OQ-22 | 8 | `feat(F-13)` |
 | `F-14` | Notifications | blocked | specified | OQ-12, OQ-14, D-06 | 8 | `feat(F-14)` |
@@ -45,10 +45,10 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 
 | ID | Rule | Implemented by | Status |
 |---|---|---|---|
-| `BR-01` | 15 patients/doctor/day | `F-04`, `F-07`, `F-16`, `F-13` | ⚠ scope undecided (`OQ-15`) |
+| `BR-01` | 15 patients/doctor/day | removed | removed by `OQ-15` |
 | `BR-02` | <5 reschedules / rolling 30 days | `F-06`, `F-12` | ⚠ mechanism undecided (`OQ-03`) |
 | `BR-03` | 15-minute check-in window | `F-05` | ⚠ timezone needed (`OQ-14`) |
-| `BR-04` | AM = walk-in, PM = booked | `F-04`, `F-07` | ⚠ boundaries undecided (`OQ-06`) |
+| `BR-04` | AM = walk-in, PM = booked | `F-04`, `F-07` | PM `[12:00,17:00)` local (`OQ-06`) |
 | `BR-05` | Override needs reason + audit | `F-10`, `F-13`, `F-15` | specified |
 | `BR-06` | Audit is silent and non-blocking | `F-15` | specified |
 | `BR-07` | Server-side RBAC on every route | `F-03` | specified |
@@ -85,20 +85,20 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `OQ-03` | `F-06`, `F-12`, `F-13` | open |
 | `OQ-04` | `F-07` | open |
 | `OQ-05` | `F-09` | open |
-| `OQ-06` | `F-04`, `F-05`, `F-07` | open |
+| `OQ-06` | `F-04`, `F-05`, `F-07` | decided |
 | `OQ-07` | `F-11`, `F-15` | decided |
 | `OQ-08` | `F-15`, `F-12`, `F-14` | open |
 | `OQ-09` | `F-06` | open |
 | `OQ-10` | `F-12`, `F-13` | open |
-| `OQ-11` | `F-04`, `F-05`, `F-09` | open |
+| `OQ-11` | `F-04`, `F-05`, `F-09` | decided |
 | `OQ-12` | `F-02`, `F-14` | decided for F-02; open for F-14 |
 | `OQ-13` | `F-08`, `F-09`, `F-10` | open |
 | `OQ-14` | `F-05`, `F-07`, `F-13`, `F-14` | open |
-| `OQ-15` | `F-04`, `F-07`, `F-13`, `F-16` | open |
+| `OQ-15` | `F-04`, `F-07`, `F-13`, `F-16` | decided |
 | `OQ-16` | `F-07`, `F-08` | open |
 | `OQ-17` | `F-08`, `F-13` | open |
 | `OQ-18` | `F-08`, `F-09` | open |
-| `OQ-19` | `F-02`, `F-04`, `F-06`, `F-10`, all | open |
+| `OQ-19` | `F-02`, `F-04`, `F-06`, `F-10`, all | partial — decided for F-04 |
 | `OQ-20` | `F-07`, `F-14` | open |
 | `OQ-21` | `F-05`, `F-12`, `F-13`, `F-15` | open |
 | `OQ-22` | every feature | decided for F-02; open for remaining NFRs |
@@ -152,15 +152,15 @@ whether it is done. `Status` follows the same vocabulary.
 
 | ID | API / artifact | Test | Status |
 |---|---|---|---|
-| `FR-BOOK-01` | `POST /appointments` | integration | specified |
-| `FR-BOOK-02` | `POST /appointments` | double-book negative | specified |
-| `FR-BOOK-03` | `POST /appointments` | cap boundary 14/15/16 | specified  |
-| `FR-BOOK-04` | `POST /appointments` | mode gate (mock clock) | specified  |
-| `FR-BOOK-05` | `POST /appointments` | time-block exclusion | specified |
+| `FR-BOOK-01` | `POST /appointments` | integration | tested |
+| `FR-BOOK-02` | `POST /appointments` | double-book negative | tested |
+| `FR-BOOK-03` | `POST /appointments` | removed cap | decided |
+| `FR-BOOK-04` | `POST /appointments` | mode gate (mock clock) | tested |
+| `FR-BOOK-05` | `POST /appointments` | time-block exclusion | tested |
 | `FR-BOOK-06` | → `F-14` | email job ≤1 | specified |
-| `FR-BOOK-07` | `GET /appointments` | ownership integration | specified |
-| `FR-BOOK-08` | `POST /appointments` | suspended negative | specified |
-| `FR-BOOK-09` | availability route (missing) | slot generation unit | specified ⚠ |
+| `FR-BOOK-07` | `GET /appointments` | ownership integration | tested |
+| `FR-BOOK-08` | `POST /appointments` | suspended negative | tested |
+| `FR-BOOK-09` | `GET /appointments/availability` | slot generation integration | tested |
 
 ### `F-05` Check-in & Late Handling — `features/F-05-checkin-and-late-handling.md`
 
@@ -243,13 +243,13 @@ whether it is done. `Status` follows the same vocabulary.
 
 | ID | API / artifact | Test | Status |
 |---|---|---|---|
-| `FR-TB-01` | `POST /timeblocks` | integration | specified |
-| `FR-TB-02` | overlap validation | boundary unit | specified |
+| `FR-TB-01` | `POST /timeblocks` | integration | tested |
+| `FR-TB-02` | overlap validation | boundary unit | built |
 | `FR-TB-03` | → `F-04` | availability integration | specified |
-| `FR-TB-04` | free-text reason | unit | specified |
-| `FR-TB-05` | `GET /timeblocks` | filter integration | specified |
-| `FR-TB-06` | `DELETE /timeblocks/:id` | release integration + audit | specified |
-| `FR-TB-07` | role guard | patient-refused negative | specified |
+| `FR-TB-04` | free-text reason | unit | tested |
+| `FR-TB-05` | `GET /timeblocks` | filter integration | tested |
+| `FR-TB-06` | `DELETE /timeblocks/:id` | release integration + audit | tested |
+| `FR-TB-07` | role guard | patient-refused negative | tested |
 
 ### `F-12` Flagging & Suspension — `features/F-12-flagging-and-suspension.md`
 

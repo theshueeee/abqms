@@ -4,7 +4,7 @@ title: API — Appointments
 status: active
 parent: docs/SPEC.md
 related: [api/_conventions.md, index/business-rules.md, data-model/scheduling.md, features/F-04-appointment-types-and-booking.md]
-last_verified: 2026-09-15
+last_verified: 2026-11-20
 ---
 
 # API — Appointments
@@ -14,6 +14,7 @@ Owns PM booking, check-in, reschedule, cancel and follow-up creation.
 | Method | Path | Access | Purpose | Feature |
 |---|---|---|---|---|
 | `GET` | `/appointments` | patient: own only; staff: filterable by date/doctor | List bookings | `F-04` |
+| `GET` | `/appointments/availability` | authenticated | List unoccupied PM slots for a doctor/type/date | `F-04` |
 | `POST` | `/appointments` | patient (own) / staff | Create a booking | `F-04` |
 | `PATCH` | `/appointments/:id/reschedule` | owner / staff | Move a booking | `F-06` |
 | `PATCH` | `/appointments/:id/cancel` | owner / staff | Cancel a booking | `F-06` |
@@ -24,9 +25,9 @@ Owns PM booking, check-in, reschedule, cancel and follow-up creation.
 
 - `FR-BOOK-01` Created bookings carry `booking_channel = online` and a valid `appointment_type_id`.
 - `FR-BOOK-02` Booking must reject slots that are already taken.
-- `FR-BOOK-03` Booking must enforce the hard cap (`BR-01`, 15/doctor/day) — scope of who counts is
-  undecided (`OQ-15`).
-- `FR-BOOK-04` Booking must reject out-of-mode times (`BR-04`, PM only) — boundaries undecided (`OQ-06`).
+- `FR-BOOK-03` The 15-patient-per-day cap is removed by `OQ-15`; it does not block F-04 bookings.
+- `FR-BOOK-04` Booking must reject out-of-mode times (`BR-04`, PM only) in `Asia/Kuala_Lumpur`,
+  `[12:00,17:00)`.
 - `FR-BOOK-05` Booking must reject slots overlapping a `TimeBlock`.
 - `FR-BOOK-06` A successful booking triggers the confirmation email automatically (`NFR-AUTO-01`).
 - `FR-CHKIN-01` Check-in is accepted only inside the 15-minute window (`BR-03`).
@@ -44,5 +45,5 @@ Owns PM booking, check-in, reschedule, cancel and follow-up creation.
 ## Status transitions
 
 `pending` → `confirmed` → `checked_in` → `completed`, plus terminal `cancelled` / `no_show`.
-The `pending` → `confirmed` trigger is undefined (`OQ-11`); sync with `QueueTicket.queue_status` is
-described in `data-model/queue.md`.
+The Successful F-04 bookings are created as `confirmed` (`OQ-11`). `QueueTicket.queue_status` is
+projected after check-in and queue transitions.

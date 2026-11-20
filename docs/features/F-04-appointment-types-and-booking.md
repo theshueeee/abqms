@@ -1,22 +1,21 @@
 ---
 id: F-04
 title: Appointment Types & PM Booking
-spec_status: blocked
-delivery_status: open
-blocked_by: [OQ-06, OQ-11, OQ-15, OQ-19]
+spec_status: complete
+delivery_status: tested
+blocked_by: []
 parent: docs/SPEC.md
 related: [api/appointments.md, data-model/scheduling.md, features/F-11-timeblock-management.md]
 rules: [BR-01, BR-04]
 depends_on: [F-02, F-03, F-11]
-last_verified: 2026-09-15
+last_verified: 2026-11-20
 ---
 
 # F-04 — Appointment Types & PM Booking
 
 ## Purpose
 
-Let a patient book a pre-scheduled PM slot, with availability that respects duration, time-blocks and
-the daily cap.
+Let a patient book a pre-scheduled PM slot, with availability that respects duration and time-blocks.
 
 ## In scope
 
@@ -27,13 +26,12 @@ state, confirmation email trigger.
 
 Check-in and late handling (`F-05`), reschedule/cancel (`F-06`), walk-ins (`F-07`).
 
-## Blockers
+## Resolved decisions
 
-- `OQ-15` — **slot generation is unspecified**: how `default_duration_minutes`, the 15/doctor/day cap
-  (`BR-01`), time-blocks and overlap prevention combine into bookable slots.
-- `OQ-06` — AM/PM boundaries that decide whether booking is even allowed right now (`BR-04`).
-- `OQ-11` — `pending` → `confirmed` transition trigger.
-- `OQ-19` — no reference-data routes exist for appointment types, doctors or cancellation reasons.
+- `OQ-06`: PM booking is allowed in `Asia/Kuala_Lumpur` from 12:00 inclusive to 17:00 exclusive.
+- `OQ-11`: `Appointment.status` is authoritative; a successful F-04 booking is stored as `confirmed`.
+- `OQ-15`: the 15-patient-per-day cap is removed; slots use a 30-minute PM grid and fit appointment duration.
+- `OQ-19`: F-04 exposes availability and read-only appointment-type/doctor reference routes.
 
 ## Requirements
 
@@ -41,7 +39,7 @@ Check-in and late handling (`F-05`), reschedule/cancel (`F-06`), walk-ins (`F-07
 |---|---|---|
 | `FR-BOOK-01` | A booking is created with `booking_channel = online` and a valid `appointment_type_id` | `POST /appointments` |
 | `FR-BOOK-02` | Already-taken slots are rejected | `POST /appointments` |
-| `FR-BOOK-03` | Bookings exceeding the 15/doctor/day cap (`BR-01`) are rejected | `POST /appointments` |
+| `FR-BOOK-03` | The removed 15-patient-per-day cap does not block booking | `POST /appointments` |
 | `FR-BOOK-04` | Bookings outside PM mode are rejected (`BR-04`) | `POST /appointments` |
 | `FR-BOOK-05` | Slots overlapping a `TimeBlock` are rejected | `POST /appointments` |
 | `FR-BOOK-06` | A successful booking automatically queues the confirmation email (`NFR-AUTO-01`) | `POST /appointments` → `F-14` |
@@ -51,8 +49,8 @@ Check-in and late handling (`F-05`), reschedule/cancel (`F-06`), walk-ins (`F-07
 
 ## Acceptance criteria
 
-1. **Given** a doctor with 14 confirmed bookings on a date, **when** a 15th is booked, **then** it
-   succeeds; **when** a 16th is attempted, **then** it is refused citing the daily cap.
+1. **Given** a doctor with 15 or more existing bookings on a date, **when** an overlapping slot is not
+   taken, **then** the booking can succeed; the daily count is not enforced.
 2. **Given** an existing booking, **when** the same slot is booked again, **then** the second request is
    refused.
 3. **Given** a doctor with a time-block covering 14:00–15:00, **when** a slot at 14:30 is requested,
@@ -66,7 +64,7 @@ Check-in and late handling (`F-05`), reschedule/cancel (`F-06`), walk-ins (`F-07
 
 | Level | What | Fixtures |
 |---|---|---|
-| Unit | slot generation: duration, overlap, time-block exclusion, cap boundary (14/15/16) | `doctor-slots` |
+| Unit | slot generation: duration, overlap, and time-block exclusion | `doctor-slots` |
 | Unit | mode gate at AM/PM boundary (mock clock) | `clinic-hours` |
 | Integration | book → row + email job ≤ 1 | `patient-booker` |
 | Integration | double-book rejected; ownership enforced on list | `patient-booker`, `patient-other` |
@@ -74,7 +72,7 @@ Check-in and late handling (`F-05`), reschedule/cancel (`F-06`), walk-ins (`F-07
 
 ## Open questions
 
-`OQ-06`, `OQ-11`, `OQ-15`, `OQ-19`.
+Resolved by `OQ-06`, `OQ-11`, `OQ-15`, and `OQ-19`.
 
 ## Commit scope
 

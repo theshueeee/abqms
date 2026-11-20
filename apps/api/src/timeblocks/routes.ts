@@ -1,5 +1,5 @@
 import { Response, Router } from "express";
-import { Prisma, StaffRole } from "@prisma/client";
+import { AppointmentStatus, Prisma, StaffRole } from "@prisma/client";
 import { z } from "zod";
 import { recordAudit } from "../audit";
 import { prisma } from "../db";
@@ -94,6 +94,29 @@ export function createTimeblocksRouter(): Router {
           },
         });
         if (overlap) return undefined;
+        const appointmentOverlap = await transaction.appointment.findFirst({
+          where: {
+            doctor_staff_id: input.doctor_staff_id,
+            status: {
+              in: [
+                AppointmentStatus.confirmed,
+                AppointmentStatus.checked_in,
+              ],
+            },
+            scheduled_datetime: { lt: input.end_datetime },
+          },
+          include: { appointment_type: true },
+        });
+        if (appointmentOverlap) {
+          const appointmentEnd = new Date(
+            appointmentOverlap.scheduled_datetime.getTime() +
+              appointmentOverlap.appointment_type.default_duration_minutes * 60_000,
+          );
+          if (appointmentOverlap.scheduled_datetime < input.end_datetime &&
+              appointmentEnd > input.start_datetime) {
+            return "appointment";
+          }
+        }
         return transaction.timeBlock.create({
           data: { ...input, blocked_by_staff_id: request.auth!.staffId! },
         });
@@ -104,6 +127,10 @@ export function createTimeblocksRouter(): Router {
       }
       if (block === undefined) {
         response.status(409).json({ error: "Time block overlaps an existing block" });
+        return;
+      }
+      if (block === "appointment") {
+        response.status(409).json({ error: "Time block overlaps a confirmed appointment" });
         return;
       }
       await recordAudit(request.auth!.staffId!, "POST", "/timeblocks", { block_id: block.block_id });

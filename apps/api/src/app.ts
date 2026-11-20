@@ -2,6 +2,8 @@ import express from "express";
 import { prisma } from "./db";
 import { createAuthRouter } from "./auth/routes";
 import { createTimeblocksRouter } from "./timeblocks/routes";
+import { createAppointmentsRouter } from "./appointments/routes";
+import { createReferenceRouter } from "./reference/routes";
 
 export function createApp() {
   const app = express();
@@ -9,6 +11,8 @@ export function createApp() {
   app.use(express.json());
   app.use("/api/auth", createAuthRouter());
   app.use("/api/timeblocks", createTimeblocksRouter());
+  app.use("/api/appointments", createAppointmentsRouter());
+  app.use("/api", createReferenceRouter());
 
   app.get("/api/health", async (_request, response) => {
     try {

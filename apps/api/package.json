@@ -6,7 +6,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:unit": "tsx --test test/auth.security.test.ts",
+    "test:unit": "tsx --test test/auth.security.test.ts test/auth.integration.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev"
   },

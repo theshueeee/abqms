@@ -4,7 +4,7 @@ title: API — Auth
 status: active
 parent: docs/SPEC.md
 related: [api/_conventions.md, index/roles-and-rbac.md, features/F-02-patient-auth.md, features/F-03-staff-provisioning-rbac.md]
-last_verified: 2026-11-04
+last_verified: 2026-11-17
 ---
 
 # API — Auth
@@ -44,3 +44,5 @@ Owns: patient authentication, password recovery, staff provisioning, and the pat
 - Password reset token creation calls a delivery adapter. The current adapter only records a
   delivery request; email delivery remains deferred to `F-14` and raw tokens are never logged.
 - Audit events: token issuance, password reset, staff creation (`F-15`).
+- Integration coverage is in `apps/api/test/auth.integration.test.ts`; Cypress API E2E coverage is
+  in `cypress/e2e/auth.cy.ts`. Both use the configured PostgreSQL-backed API.

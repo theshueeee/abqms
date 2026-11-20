@@ -14,7 +14,7 @@ export default function HomePage() {
             <a className="transition-colors hover:text-brand" href="#clinic-info">Clinic information</a>
           </nav>
           <a
-            href="#sign-in"
+            href="/login"
             className="rounded-full border border-brand/20 px-4 py-2 text-sm font-bold text-brand transition-colors hover:bg-brand-pale"
           >
             Sign in

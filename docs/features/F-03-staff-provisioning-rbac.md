@@ -2,13 +2,13 @@
 id: F-03
 title: Staff Provisioning & RBAC Enforcement
 spec_status: complete
-delivery_status: open
+delivery_status: tested
 blocked_by: []
 parent: docs/SPEC.md
 related: [api/auth.md, index/roles-and-rbac.md, api/_conventions.md]
 rules: [BR-07, BR-08]
 depends_on: [F-02]
-last_verified: 2026-09-15
+last_verified: 2026-11-17
 ---
 
 # F-03 — Staff Provisioning & RBAC Enforcement
@@ -61,11 +61,18 @@ Patient signup (`F-02`), the business actions those staff perform (later feature
 | Integration | deactivated account cannot authenticate | `staff-inactive` |
 | Guard sweep | every registered route is covered by the guard (list routes from the router, assert protected) | `staff-assistant` |
 | Negative | no-session call on each protected route returns 401 | none |
+| E2E | no-session staff provisioning returns 401 through the running API | `cypress/e2e/auth.cy.ts` |
 
 ## Open questions
 
 `OQ-02` — does not block staff provisioning itself, but decides how the "doctor resource" that
 bookings reference is modelled, which later features depend on.
+
+## Checkpoint notes (2026-11-17)
+
+The shared session guard and role checks typecheck successfully. Database-backed login throttling
+is now shared across API instances. Integration coverage now passes for admin provisioning, creator
+tracking, invalid roles, inactive staff, assistant refusal, and unauthenticated access.
 
 ## Commit scope
 

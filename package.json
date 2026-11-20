@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace apps/api\" \"npm run dev --workspace apps/web\"",
     "build": "npm run build --workspace apps/api && npm run build --workspace apps/web",
-    "test": "npm run typecheck --workspace apps/api && npm run build --workspace apps/web",
+    "test": "npm run typecheck --workspace apps/api && npm run test:unit --workspace apps/api && npm run build --workspace apps/web",
     "test:e2e": "cypress run",
     "db:generate": "npm run db:generate --workspace apps/api",
     "db:migrate": "npm run db:migrate --workspace apps/api"

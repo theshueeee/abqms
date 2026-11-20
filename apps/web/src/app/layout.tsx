@@ -2,8 +2,12 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "DentaQueue",
-  description: "Dental clinic appointments and queue management",
+  title: {
+    default: "DentaQueue | Dental care, organised",
+    template: "%s | DentaQueue",
+  },
+  description:
+    "Appointments and live queue updates for the General Dental Clinic, Universiti Malaya.",
 };
 
 export default function RootLayout({

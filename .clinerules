@@ -36,6 +36,23 @@ When a requirement or decision changes, update **all** of:
 5. `docs/SPEC.md` — only if a new file was added (one link, never content)
 6. `docs/index/business-rules.md` — only if a rule itself changed
 
+## Documentation synchronization after every change
+
+After **every code, schema, configuration, test, or documentation change**, synchronize the
+workspace documentation before declaring the task complete:
+
+1. Update `docs/PROGRESS.md` with what changed, the validation result, the current delivery status,
+   and the next logical task.
+2. Update every directly related authoritative file from the write path above so requirements,
+   API contracts, data-model notes, open-question status, and traceability do not drift from the
+   implementation.
+3. If no related authoritative file needs a content change, still verify that fact and record the
+   completed change and validation in `docs/PROGRESS.md`.
+4. Review the final diff for documentation/code disagreement before committing.
+
+`docs/PROGRESS.md` is the required chronological workspace log. It must be updated in the same task
+as the implementation, not deferred to a later milestone.
+
 ## Build loop (one feature at a time)
 
 1. Pick the lowest unblocked feature in `docs/traceability.md` §1, respecting the suggested build order
@@ -44,8 +61,9 @@ When a requirement or decision changes, update **all** of:
 3. Implement **only** that feature's `FR-*` list.
 4. Write and run the tests named in its Test plan. No feature is "done" without them.
 5. Update the `traceability.md` rows to `tested`.
-6. Commit once, scoped to that feature: `chore(F-01): …` / `feat(F-07): walk-in registration (OCR+manual)`.
-7. Record the day's outcome in `docs/PROGRESS.md`.
+6. Synchronize `docs/PROGRESS.md` and all directly related authoritative documents.
+7. Commit once, scoped to that feature: `chore(F-01): …` / `feat(F-07): walk-in registration (OCR+manual)`.
+8. Record the day's outcome in `docs/PROGRESS.md` before the commit.
 
 ## Hard constraints for all code
 
@@ -79,7 +97,8 @@ When a requirement or decision changes, update **all** of:
 ## Core Directives
 1. ALWAYS read `docs/SPEC.md` in full before writing or modifying code. It is the single source of truth for schema, roles, and workflows. Do not invent entities, fields, or endpoints not listed there — propose additions to SPEC.md first.
 2. ALWAYS check `docs/PROGRESS.md` at the start of a session to know what's done and what's next. Do not re-do completed steps.
-3. AFTER completing any milestone (a checklist item in PROGRESS.md, a schema change, a new module), update `docs/PROGRESS.md` immediately — check off the item and note the next logical task.
+3. AFTER every change (not only milestones), update `docs/PROGRESS.md` immediately — describe the
+   change, record validation, and note the next logical task.
 4. If a schema change is needed, update the Prisma schema AND the ERD section of `docs/SPEC.md` in the same task — they must never drift apart.
 5. Never hardcode secrets (DB URL, Resend API key, JWT secret) — always use `.env` + `process.env`.
 6. Ignore `progress.txt`, its for own reference

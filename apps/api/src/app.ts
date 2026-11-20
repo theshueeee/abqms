@@ -1,10 +1,12 @@
 import express from "express";
 import { prisma } from "./db";
+import { createAuthRouter } from "./auth/routes";
 
 export function createApp() {
   const app = express();
 
   app.use(express.json());
+  app.use("/api/auth", createAuthRouter());
 
   app.get("/api/health", async (_request, response) => {
     try {

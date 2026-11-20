@@ -59,6 +59,11 @@ export function requireAuth(roles?: StaffRole[]): RequestHandler {
     }
     //If the patient is suspended then it returns 403
 
+    if (roles && !session.staff) {
+      response.status(403).json({ error: "Insufficient permissions" });
+      return;
+    }
+
     if (session.staff && (!session.staff.is_active || (roles && !roles.includes(session.staff.role)))) {
       response.status(403).json({ error: "Insufficient permissions" });
       return;

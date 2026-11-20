@@ -57,6 +57,8 @@ model Staff {
   updated_at     DateTime   @updatedAt
   sessions       Session[]
   reset_tokens   PasswordResetToken[]
+  doctor_blocks  TimeBlock[] @relation("TimeBlockDoctor")
+  created_blocks TimeBlock[] @relation("TimeBlockCreator")
 }
 
 model Session {
@@ -95,4 +97,33 @@ model LoginAttempt {
   failures      Int      @default(0)
   blocked_until DateTime?
   updated_at    DateTime @updatedAt
+}
+
+model TimeBlock {
+  block_id            String   @id @default(uuid()) @db.Uuid
+  doctor_staff_id     String   @db.Uuid
+  blocked_by_staff_id String   @db.Uuid
+  start_datetime      DateTime
+  end_datetime        DateTime
+  block_reason        String
+  notes               String?
+  created_at          DateTime @default(now())
+  deleted_at          DateTime?
+  doctor              Staff    @relation("TimeBlockDoctor", fields: [doctor_staff_id], references: [staff_id])
+  blocked_by          Staff    @relation("TimeBlockCreator", fields: [blocked_by_staff_id], references: [staff_id])
+
+  @@index([doctor_staff_id, start_datetime, end_datetime])
+  @@index([doctor_staff_id, deleted_at])
+}
+
+model AuditLog {
+  log_id     String   @id @default(uuid()) @db.Uuid
+  user_id    String
+  action     String
+  resource   String
+  details    Json?
+  created_at DateTime @default(now())
+
+  @@index([resource, created_at])
+  @@index([user_id, created_at])
 }

@@ -2,11 +2,11 @@
 id: F-11
 title: Time-Block Management
 spec_status: specified
-delivery_status: built
+delivery_status: tested
 parent: docs/SPEC.md
 related: [api/timeblocks.md, data-model/scheduling.md, features/F-04-appointment-types-and-booking.md]
 depends_on: [F-03]
-last_verified: 2026-11-20
+last_verified: 2026-11-21
 ---
 
 # F-11 — Time-Block Management
@@ -69,9 +69,12 @@ Resolved by `OQ-07`.
 
 ## Implementation status
 
-The time-block persistence and staff/read-only routes are implemented and covered by API
-integration tests. Appointment-conflict checks and availability integration remain with `F-04`,
-because the appointment model and confirmation workflow are not implemented yet.
+Time-block persistence and the staff/read-only routes are implemented and covered by API integration
+tests. The two cross-feature requirements that were outstanding when the feature was first built have
+since landed with `F-04`: active blocks are excluded from generated PM availability
+(`FR-BOOK-05`, `FR-TB-03`), and both directions of the appointment/block conflict rule are enforced —
+creating a block that overlaps a `confirmed` appointment is refused, and confirming an appointment
+inside an active block is refused (`FR-TB-02`).
 
 ## Commit scope
 

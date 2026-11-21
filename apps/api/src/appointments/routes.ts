@@ -11,6 +11,15 @@ const SLOT_INTERVAL_MINUTES = 30;
 const TIME_ZONE = "Asia/Kuala_Lumpur";
 const DEFAULT_APPOINTMENT_TYPE_ID = "10000000-0000-4000-8000-000000000001";
 const DEFAULT_DOCTOR_STAFF_ID = "20000000-0000-4000-8000-000000000001";
+const CHECKIN_WINDOW_MINUTES = 15;
+
+const appointmentInclude = {
+  appointment_type: true,
+  doctor: true,
+  patient: true,
+} as const;
+
+type AppointmentWithRelations = Prisma.AppointmentGetPayload<{ include: typeof appointmentInclude }>;
 
 // Service and doctor are clinic defaults for the patient booking flow, so both
 // reference ids are optional and resolved server-side when the UI omits them.
@@ -73,6 +82,65 @@ function addMinutes(date: Date, minutes: number): Date {
 function clinicNow(): Date {
   const mockNow = process.env.CLINIC_MOCK_NOW;
   return mockNow ? new Date(mockNow) : new Date();
+}
+
+function checkinWindowEnd(scheduled: Date): Date {
+  return addMinutes(scheduled, CHECKIN_WINDOW_MINUTES);
+}
+
+async function loadAppointment(appointmentId: string): Promise<AppointmentWithRelations | null> {
+  return prisma.appointment.findUnique({
+    where: { appointment_id: appointmentId },
+    include: appointmentInclude,
+  });
+}
+
+function isCheckinActorAllowed(
+  request: AuthenticatedRequest,
+  appointment: AppointmentWithRelations,
+): boolean {
+  // A patient may only check in their own appointment; staff may check in any.
+  if (request.auth!.actorType === "patient") {
+    return appointment.patient_id === request.auth!.patientId;
+  }
+  return true;
+}
+
+// Statuses a check-in may still transition away from.
+const CHECKIN_ELIGIBLE_STATUSES = [AppointmentStatus.pending, AppointmentStatus.confirmed];
+
+const TERMINAL_CHECKIN_STATUSES: AppointmentStatus[] = [
+  AppointmentStatus.cancelled,
+  AppointmentStatus.no_show,
+  AppointmentStatus.completed,
+];
+
+function isTerminalForCheckin(status: AppointmentStatus): boolean {
+  return TERMINAL_CHECKIN_STATUSES.includes(status);
+}
+
+// The guarded update makes a concurrent second check-in a no-op rather than a
+// second transition. A zero count means another request already moved the row,
+// so the current status is re-read and reported back to the caller.
+async function transitionCheckinStatus(
+  appointmentId: string,
+  target: AppointmentStatus,
+): Promise<{ updated: boolean; appointment: AppointmentWithRelations | null }> {
+  const updated = await prisma.appointment.updateMany({
+    where: {
+      appointment_id: appointmentId,
+      status: { in: CHECKIN_ELIGIBLE_STATUSES },
+    },
+    data: { status: target },
+  });
+  if (updated.count === 0) {
+    return { updated: false, appointment: await loadAppointment(appointmentId) };
+  }
+  return { updated: true, appointment: await loadAppointment(appointmentId) };
+}
+
+function actorId(request: AuthenticatedRequest): string {
+  return request.auth!.staffId ?? request.auth!.patientId!;
 }
 
 function overlaps(startA: Date, endA: Date, startB: Date, endB: Date): boolean {
@@ -398,6 +466,88 @@ export function createAppointmentsRouter(): Router {
     } catch (error) {
       console.error("Appointment booking failed", error);
       response.status(500).json({ error: "Unable to create appointment" });
+    }
+  });
+
+  router.post("/:id/checkin", requireAuth(), async (request: AuthenticatedRequest, response) => {
+    const appointmentId = typeof request.params.id === "string" ? request.params.id : "";
+    if (!z.string().uuid().safeParse(appointmentId).success) {
+      response.status(400).json({ error: "Invalid appointment id" });
+      return;
+    }
+
+    try {
+      const appointment = await loadAppointment(appointmentId);
+      if (!appointment) {
+        response.status(404).json({ error: "Appointment not found" });
+        return;
+      }
+      if (!isCheckinActorAllowed(request, appointment)) {
+        response.status(403).json({ error: "Cannot check in for another appointment" });
+        return;
+      }
+      if (appointment.status === AppointmentStatus.checked_in) {
+        response.status(409).json({ error: "Appointment is already checked in", appointment });
+        return;
+      }
+      if (isTerminalForCheckin(appointment.status)) {
+        response.status(409).json({
+          error: `Appointment cannot be checked in from status ${appointment.status}`,
+          appointment,
+        });
+        return;
+      }
+
+      const now = clinicNow();
+      const scheduled = appointment.scheduled_datetime;
+
+      if (now > checkinWindowEnd(scheduled)) {
+        // Missing the window marks the appointment as a no-show and prompts a reschedule.
+        const result = await transitionCheckinStatus(appointmentId, AppointmentStatus.no_show);
+        if (!result.updated) {
+          response.status(409).json({
+            error: `Appointment cannot be checked in from status ${result.appointment?.status ?? "unknown"}`,
+            appointment: result.appointment,
+          });
+          return;
+        }
+        await recordAudit(
+          actorId(request),
+          "POST",
+          `/appointments/${appointmentId}/checkin`,
+          { appointment_id: appointmentId, outcome: "no_show" },
+        );
+        response.status(409).json({
+          error: "Check-in window has passed",
+          appointment: result.appointment,
+          reschedule_required: true,
+        });
+        return;
+      }
+
+      if (now < scheduled) {
+        response.status(409).json({ error: "Check-in opens at the scheduled time", appointment });
+        return;
+      }
+
+      const result = await transitionCheckinStatus(appointmentId, AppointmentStatus.checked_in);
+      if (!result.updated) {
+        response.status(409).json({
+          error: `Appointment cannot be checked in from status ${result.appointment?.status ?? "unknown"}`,
+          appointment: result.appointment,
+        });
+        return;
+      }
+      await recordAudit(
+        actorId(request),
+        "POST",
+        `/appointments/${appointmentId}/checkin`,
+        { appointment_id: appointmentId, outcome: "checked_in" },
+      );
+      response.status(200).json({ appointment: result.appointment });
+    } catch (error) {
+      console.error("Appointment check-in failed", error);
+      response.status(500).json({ error: "Unable to check in appointment" });
     }
   });
 

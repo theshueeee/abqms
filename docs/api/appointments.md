@@ -70,3 +70,29 @@ Owns PM booking, check-in, reschedule, cancel and follow-up creation.
 `pending` → `confirmed` → `checked_in` → `completed`, plus terminal `cancelled` / `no_show`.
 The Successful F-04 bookings are created as `confirmed` (`OQ-11`). `QueueTicket.queue_status` is
 projected after check-in and queue transitions.
+
+## F-05 check-in contract
+
+`POST /appointments/:id/checkin` takes no request body. The actor may be the owning patient or any
+active staff member (`OQ-21`); a patient checking in another patient's appointment is refused.
+
+The accepted window is `[scheduled_datetime, scheduled_datetime + 15 minutes]` and the boundary is
+inclusive — a check-in at exactly +15:00 succeeds. The window opens at the scheduled time, so an
+early check-in is refused. The window semantics are fixed in
+`features/F-05-checkin-and-late-handling.md`.
+
+| Outcome | Status | Body |
+|---|---|---|
+| Checked in | `200` | `{ appointment }` with `status = checked_in` |
+| Window missed | `409` | `{ error, appointment, reschedule_required: true }`, `status = no_show` |
+| Check-in not yet open | `409` | `{ error, appointment }` — early check-in |
+| Already checked in | `409` | `{ error, appointment }` |
+| Terminal status | `409` | `{ error, appointment }` — `cancelled` / `no_show` / `completed` |
+| Not the owner | `403` | `{ error }` |
+| Unknown id | `404` | `{ error }` |
+| Malformed id | `400` | `{ error }` |
+
+`no_show` is set lazily — only when a check-in is attempted after the window. An appointment nobody
+attempts stays `confirmed`; the missing sweep is tracked as `OQ-24`. Every committed transition
+writes an audit row on `/appointments/:id/checkin` with `details.outcome` of `checked_in` or
+`no_show` (`BR-06` — audit failures never fail the request).

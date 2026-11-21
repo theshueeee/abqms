@@ -4,7 +4,7 @@ title: Roles and RBAC
 status: active
 parent: docs/SPEC.md
 related: [index/business-rules.md, api/_conventions.md, features/F-03-staff-provisioning-rbac.md]
-last_verified: 2026-09-15
+last_verified: 2026-11-21
 ---
 
 # Roles and RBAC
@@ -34,7 +34,7 @@ this file instead of restating permissions. Enforcement is `BR-07` / `NFR-RBAC-0
 | Read appointment types / doctors / cancel reasons | ✅ | ✅ | ✅ | `api/_conventions.md` (read-only reference data) |
 | Book appointment | ✅ own | ✅ | ✅ | `POST /appointments` |
 | List appointments | own only | filterable by date/doctor | filterable by date/doctor | `GET /appointments` |
-| Check in | own only (`OQ-21`) | ✅ | ✅ | `POST /appointments/:id/checkin` |
+| Check in | ✅ own only | ✅ | ✅ | `POST /appointments/:id/checkin` |
 | Reschedule / cancel | ✅ own | ✅ | ✅ | `api/appointments.md` |
 | Walk-in OCR + register | ✅ | ✅ | ✅ | `api/walkin-queue.md` |
 | Live queue position | ✅ own ticket | ✅ | ✅ | `GET /queue/live/:doctor_staff_id` |

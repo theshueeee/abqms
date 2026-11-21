@@ -77,6 +77,20 @@ before 17:00. Active `TimeBlock` rows and existing pending/confirmed/checked-in 
 overlapping slots. Slots that have already started in `Asia/Kuala_Lumpur` are never returned
 (`FR-BOOK-11`). The 15-patient-per-day cap is removed by `OQ-15`.
 
+## Check-in transitions
+
+`POST /appointments/:id/checkin` moves an appointment to `checked_in` when the request arrives in
+`[scheduled_datetime, scheduled_datetime + 15 minutes]`. The boundary is inclusive and the window
+opens at the scheduled time, so an early check-in is refused.
+
+A check-in attempted after the window moves the appointment to `no_show` and returns a reschedule
+prompt. This transition is **lazy**: it happens only when someone attempts a check-in. An
+appointment nobody attempts stays `confirmed` indefinitely, because no scheduled sweep exists yet —
+that gap is tracked as `OQ-24` and is the natural responsibility of `F-14`.
+
+A second check-in on an appointment already in `checked_in` is refused, so one check-in can never
+produce more than one queue entry once the queue model lands.
+
 ## Default booking resources
 
 The patient booking flow does not select a service or doctor. When `appointment_type_id` or

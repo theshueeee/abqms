@@ -33,24 +33,33 @@ Entities: `AppointmentType`, `Appointment`, `RescheduleLog`, `TimeBlock`.
 | `status` | Enum(`pending`, `confirmed`, `checked_in`, `completed`, `cancelled`, `no_show`) | Authoritative status machine; successful F-04 bookings start as `confirmed` — `OQ-11` |
 | `is_follow_up` | Boolean | |
 | `parent_appointment_id` | FK → `Appointment` (self-ref, nullable) | Follow-up chains |
-| `reschedule_count` | Int | Duplicates `Patient.reschedule_credits` — `OQ-03` |
-| `cancellation_reason_id` | FK → `CancellationReason` (nullable) | Nullable here but required by the cancel contract — `OQ-09` |
-| `cancelled_by_patient_id` / `cancelled_by_staff_id` | FK (nullable) | Exactly one should be set on cancellation |
+| `cancellation_reason_id` | FK → `CancellationReason` (nullable) | Nullable here but required by the cancel contract — enforced by a `CHECK` constraint (`OQ-09`) |
+| `cancelled_by_patient_id` / `cancelled_by_staff_id` | FK (nullable) | Exactly one is set on cancellation — enforced by a `CHECK` constraint (`OQ-09`) |
 | `walkin_full_name` / `walkin_phone` / `walkin_id_type` / `walkin_id_number` | String? | For unregistered walk-ins; overlaps `QueueTicket.ocr_*` |
 | `created_at` / `updated_at` | DateTime | |
+
+`Patient.reschedule_credits` and `Appointment.reschedule_count` were **dropped** by `OQ-03` — the
+`RescheduleLog` table is the only store for `BR-02`.
+
+Two `CHECK` constraints enforce the cancel contract at the database level (`OQ-09`):
+
+- `Appointment_cancel_reason_required` — `status <> 'cancelled' OR cancellation_reason_id IS NOT NULL`
+- `Appointment_cancel_actor_exclusive` — `status <> 'cancelled' OR num_nonnulls(cancelled_by_patient_id, cancelled_by_staff_id) = 1`
 
 ## `RescheduleLog`
 
 | Field | Type | Notes |
 |---|---|---|
 | `reschedule_id` | UUID (PK) | |
-| `appointment_id` | FK → `Appointment` | |
-| `patient_id` | FK → `Patient` | |
+| `appointment_id` | FK → `Appointment` | `ON DELETE CASCADE` |
+| `patient_id` | FK → `Patient` | `ON DELETE CASCADE` |
 | `old_scheduled_datetime` / `new_scheduled_datetime` | DateTime | |
-| `reason` | String | |
-| `rescheduled_at` | DateTime | |
+| `reason` | String | Defaults to `"Patient requested reschedule"` |
+| `rescheduled_at` | DateTime | Defaults to `now()` |
 
-Feeds `BR-02` evaluation (rolling 30-day count) — `OQ-03`.
+Feeds `BR-02` evaluation and is the **authoritative** store for the reschedule budget (`OQ-03`).
+The budget counts rows with `rescheduled_at > now − 30 days` — a rolling window with an exclusive
+lower bound, evaluated in UTC instants. Indexed on `(patient_id, rescheduled_at)` for that query.
 
 ## `TimeBlock`
 

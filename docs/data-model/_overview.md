@@ -48,9 +48,9 @@ by domain; this file holds the ERD, the relationship summary and the conventions
 |---|---|---|
 | 1 | `Patient` has no unique IC / Matric No. column, yet login is specified as IC or Matric No. | `OQ-01` |
 | 2 | `Appointment.doctor_staff_id → Staff`, but `Staff.role` excludes doctors and `BR-08` says doctors don't use the system | `OQ-02` |
-| 3 | `Patient.reschedule_credits` vs `Appointment.reschedule_count` both model `BR-02` | `OQ-03` |
+| 3 | `Patient.reschedule_credits` vs `Appointment.reschedule_count` both model `BR-02` — **resolved** by `OQ-03` (2026-11-22): `RescheduleLog` is authoritative and both columns were dropped | `OQ-03` |
 | 4 | `QueueTicket.appointment_id` is a non-null 1:1, but unregistered walk-ins have no `Patient`/`Appointment` | `OQ-04` |
 | 5 | No room/capacity entity exists although `F-09` requires a capacity check | `OQ-05` |
-| 6 | `cancellation_reason_id` is nullable in the model but required by the cancel contract | `OQ-09` |
+| 6 | `cancellation_reason_id` is nullable in the model but required by the cancel contract — **resolved** by `OQ-09` (2026-11-22): two `CHECK` constraints enforce it | `OQ-09` |
 | 7 | No notification-delivery or password-reset token tables exist | `OQ-12` |
 | 8 | Queue ordering has no tie-break rule, so `original/current_position` is unsafe under concurrency | `OQ-13` |

@@ -19,12 +19,14 @@ last_verified: 2026-11-17
 | `phone_number` | String | |
 | `password_hash` | String | Hashing algorithm undecided — `OQ-22` |
 | `date_of_birth` | DateTime | |
-| `reschedule_credits` | Int | Decremented per reschedule, resets on a rolling 30-day window. Conflicts with `Appointment.reschedule_count` — `OQ-03` |
-| `account_status` | Enum(`active`, `suspended`, `flagged`) | Mapping to `SuspensionRecord.outcome` undecided — `OQ-10` |
+| `account_status` | Enum(`active`, `suspended`, `flagged`) | Mapping to `SuspensionRecord.outcome` undecided — `OQ-10` (narrow slice decided 2026-11-22: a `BR-02` breach sets `flagged`) |
 | `suspension_reason` | String? | |
 | `last_known_id_type` | String? | For OCR-reused ID (MyKad / Passport) |
 | `last_known_id_number` | String? | |
 | `created_at` / `updated_at` | DateTime | |
+
+`Patient.reschedule_credits` was **dropped** by `OQ-03` (2026-11-22). The reschedule budget is
+counted from `RescheduleLog` rows instead — see `data-model/scheduling.md`.
 
 Patient login uses the unique email address plus password (`OQ-01`, decided 2026-10-29).
 

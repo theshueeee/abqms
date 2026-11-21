@@ -18,6 +18,7 @@ Owns PM booking, check-in, reschedule, cancel and follow-up creation.
 | `POST` | `/appointments` | patient (own) / staff | Create a booking | `F-04` |
 | `PATCH` | `/appointments/:id/reschedule` | owner / staff | Move a booking | `F-06` |
 | `PATCH` | `/appointments/:id/cancel` | owner / staff | Cancel a booking | `F-06` |
+| `GET` | `/appointments/policy-limits` | patient: own; staff: `?patient_id=` | Remaining `BR-02` allowance | `F-06` |
 | `POST` | `/appointments/:id/checkin` | owner (`OQ-21`) / staff | Check in for a booked slot | `F-05` |
 | `POST` | `/appointments/:id/follow-up` | **staff only** | Create a follow-up booking | `F-16` |
 
@@ -43,6 +44,7 @@ Owns PM booking, check-in, reschedule, cancel and follow-up creation.
   today (`OQ-09`).
 - `FR-RESCH-05` Cancellation records exactly one actor: `cancelled_by_patient_id` or
   `cancelled_by_staff_id`.
+- `FR-RESCH-09` `GET /appointments/policy-limits` exposes the remaining `BR-02` allowance.
 - `FR-FUP-01` Follow-up creation sets `is_follow_up = true` and `parent_appointment_id`.
 
 ## F-04 request contract
@@ -96,3 +98,63 @@ early check-in is refused. The window semantics are fixed in
 attempts stays `confirmed`; the missing sweep is tracked as `OQ-24`. Every committed transition
 writes an audit row on `/appointments/:id/checkin` with `details.outcome` of `checked_in` or
 `no_show` (`BR-06` — audit failures never fail the request).
+
+## F-06 reschedule contract
+
+`PATCH /appointments/:id/reschedule` takes `{ scheduled_datetime, reason? }`. `reason` defaults to
+`"Patient requested reschedule"`. The actor may be the owning patient or any staff member; a patient
+acting on another patient's appointment is refused.
+
+The `BR-02` budget is evaluated inside the transaction under a **patient-scoped advisory lock**, so two
+concurrent reschedules cannot both pass the fifth-reschedule check. The budget counts `RescheduleLog`
+rows with `rescheduled_at > now − 30 days` (`OQ-03`).
+
+The new slot is validated with the same rules as booking: PM window `[12:00,17:00)` in
+`Asia/Kuala_Lumpur`, the 30-minute grid, a future time, no overlapping appointment, and no active
+`TimeBlock`. The appointment being moved is excluded from the overlap check.
+
+| Outcome | Status | Body |
+|---|---|---|
+| Rescheduled | `200` | `{ appointment, reschedules_used, reschedules_remaining }` |
+| Budget exhausted | `409` | `{ error: "Reschedule limit reached", flagged: true, reschedules_used, limit: 5 }` |
+| Outside PM hours | `409` | `{ error: "Scheduled time must be within PM hours" }` |
+| Off the slot grid | `400` | `{ error: "Scheduled time must use the 30-minute slot grid" }` |
+| In the past | `400` | `{ error: "Scheduled time must be in the future" }` |
+| Slot taken | `409` | `{ error: "Time slot is already taken" }` |
+| Slot blocked | `409` | `{ error: "Time slot overlaps an active time block" }` |
+| Terminal status | `409` | `{ error: "Appointment cannot be rescheduled from status <status>", appointment }` |
+| Not the owner | `403` | `{ error: "Cannot reschedule another appointment" }` |
+| Unknown id | `404` | `{ error: "Appointment not found" }` |
+| Malformed id | `400` | `{ error: "Invalid appointment id" }` |
+
+A breach writes a `SuspensionRecord` with `triggered_by = system`, `outcome = pending`, sets
+`Patient.account_status = flagged`, and leaves the booking unchanged (`OQ-10` narrow slice).
+
+## F-06 cancellation contract
+
+`PATCH /appointments/:id/cancel` takes `{ cancellation_reason_id }`. The reason must be an active,
+non-system reason (`GET /cancellation-reasons`). Exactly one actor FK is set: `cancelled_by_patient_id`
+for a patient, `cancelled_by_staff_id` for staff.
+
+| Outcome | Status | Body |
+|---|---|---|
+| Cancelled | `200` | `{ appointment }` including `cancellation_reason` |
+| Missing/invalid reason | `400` / `404` | `{ error: "Invalid request" }` / `{ error: "Cancellation reason not found" }` |
+| Already terminal | `409` | `{ error: "Appointment is already <status>", appointment }` |
+| Not the owner | `403` | `{ error: "Cannot cancel another appointment" }` |
+| Unknown id | `404` | `{ error: "Appointment not found" }` |
+| Malformed id | `400` | `{ error: "Invalid appointment id" }` |
+
+Cancelling a `no_show` appointment is the only permitted terminal transition and exists for the
+`FR-CHKIN-03` decline path (`OQ-25`). It audits with `details.path = "decline_reschedule"`; every
+other cancel audits with `details.path = "direct"`.
+
+## F-06 policy-limits contract
+
+`GET /appointments/policy-limits` returns the caller's own allowance. A patient reads their own; a
+staff member must pass `?patient_id=<uuid>` and receives `400 { error: "patient_id is required" }`
+otherwise.
+
+```json
+{ "limit": 5, "window_days": 30, "used": 1, "remaining": 4, "window_start": "...", "evaluated_at": "..." }
+```

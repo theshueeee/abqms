@@ -62,7 +62,7 @@ Resolved on 2026-11-21, alongside `OQ-14` and `OQ-21`:
 | `FR-CHKIN-01` | Check-in is accepted only within 15 minutes of `scheduled_datetime` (`BR-03`) | `POST /appointments/:id/checkin` |
 | `FR-CHKIN-05` | Check-in sets `Appointment.status = checked_in` and is reflected in Master View | `POST …/checkin` → `F-09` — **blocked**: no queue model yet |
 | `FR-CHKIN-02` | Missing the window sets `no_show` and returns a reschedule prompt | `POST /appointments/:id/checkin` |
-| `FR-CHKIN-03` | Declining the prompt cancels the appointment | `PATCH /appointments/:id/cancel` → `F-06` — **blocked**: cancel route does not exist |
+| `FR-CHKIN-03` | Declining the prompt cancels the appointment | `PATCH /appointments/:id/cancel` → `F-06` — implemented; the `no_show → cancelled` decline transition is permitted (`OQ-25`) |
 | `FR-CHKIN-04` | Check-in is rejected for `cancelled` / `no_show` / `completed` appointments | `POST …/checkin` |
 | `FR-CHKIN-06` | Only the owning patient (if `OQ-21` allows) or staff may check in | `POST …/checkin` |
 
@@ -100,7 +100,8 @@ stay `confirmed`) is recorded as `OQ-24`.
 
 The check-in endpoint `POST /appointments/:id/checkin` is implemented with the window, actor,
 terminal-state and repeat-check-in rules above, and is covered by API integration tests. The
-decline path (`FR-CHKIN-03`) and the Master View projection (`FR-CHKIN-05`) remain blocked on
+decline path (`FR-CHKIN-03`) is implemented by `F-06` — cancelling a `no_show` appointment is the one
+permitted terminal transition (`OQ-25`). The Master View projection (`FR-CHKIN-05`) remains blocked on
 `F-06` and the queue model respectively.
 
 ## Commit scope

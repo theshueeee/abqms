@@ -29,14 +29,17 @@ file rather than restating behaviour. Backend is **Express REST, prefix `/api`**
 
 ## Read-only reference data
 
-The booking UI cannot function without these lists, but **no endpoint is specified** for them —
-`OQ-19`:
+The booking UI cannot function without these lists. `OQ-19` was decided for `F-04` and extended for
+`F-06`:
 
-| Needed by | Suggested route | Content source |
-|---|---|---|
-| Slot/appointment picker | `GET /appointment-types` | `data-model/scheduling.md` |
-| Doctor picker | `GET /doctors` | Existing active staff records are used by F-04; `OQ-02` remains open for the authoritative doctor model |
-| Cancellation flow | `GET /cancellation-reasons` | `data-model/moderation.md` |
+| Needed by | Route | Content source | Status |
+|---|---|---|---|
+| Slot/appointment picker | `GET /appointment-types` | `data-model/scheduling.md` | implemented (`F-04`) |
+| Doctor picker | `GET /doctors` | Existing active staff records are used by F-04; `OQ-02` remains open for the authoritative doctor model | implemented (`F-04`) |
+| Cancellation flow | `GET /cancellation-reasons` | `data-model/moderation.md` | implemented (`F-06`) |
+
+All three routes are authenticated and read-only. `GET /cancellation-reasons` returns only active,
+non-system reasons.
 
 ## Response/route inventory
 

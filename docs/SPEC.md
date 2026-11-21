@@ -19,7 +19,7 @@ queue transparency plus staff-side operational control.
 ## The rule that shapes everything
 
 **Dual mode (BR-04): AM = live walk-in queue management; PM = pre-scheduled bookings only.
-Hard cap: 15 patients/doctor/day (BR-01).** Details: `index/business-rules.md`.
+The 15-patient-per-doctor/day cap is removed (`OQ-15`).** Details: `index/business-rules.md`.
 
 ## Reading map
 

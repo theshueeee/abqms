@@ -3,7 +3,7 @@ id: FRONTEND-OVERVIEW
 title: Frontend Overview
 status: active
 parent: docs/FRONTEND-BUILD-PLAN.md
-last_verified: 2026-11-18
+last_verified: 2026-11-21
 ---
 
 # Frontend Overview
@@ -34,7 +34,8 @@ Figma. The individual page files preserve the visual observations and the implem
 | Patient registration | — | `/register` | Unauthenticated | F-02 | implemented; API/Cypress coverage pass |
 | Forgot password | — | `/forgot-password` | Unauthenticated | F-02 | implemented; API/Cypress coverage pass |
 | Reset password | — | `/reset-password?token=...` | Unauthenticated | F-02 | implemented; API/Cypress coverage pass |
-| Patient Dashboard | [6-51](https://www.figma.com/proto/4vzskzwnRHQKcnW11Tqubg/DentaQueue?node-id=6-51&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1) | `/patient/dashboard` | Patient | F-02/F-03, F-04, F-08 | verified; spec written |
+| Patient Dashboard | [6-51](https://www.figma.com/proto/4vzskzwnRHQKcnW11Tqubg/DentaQueue?node-id=6-51&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1) | `/patient/dashboard` | Patient | F-02/F-03, F-04, F-08 | implemented; F-04 navigation, upcoming appointments and Cypress pass |
+| Patient Booking — Date/Time | [6-214](https://www.figma.com/proto/4vzskzwnRHQKcnW11Tqubg/DentaQueue?node-id=6-214&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1) | `/patient/book` | Patient | F-04 | implemented; server-side service/doctor defaults + availability/booking Cypress pass |
 | Remaining prototype frames | — | — | — | — | pending inspection |
 
 ## Delivery rule

@@ -2,7 +2,7 @@
 id: F-11
 title: Time-Block Management
 spec_status: specified
-delivery_status: open
+delivery_status: built
 parent: docs/SPEC.md
 related: [api/timeblocks.md, data-model/scheduling.md, features/F-04-appointment-types-and-booking.md]
 depends_on: [F-03]
@@ -66,6 +66,12 @@ Slot generation itself (`F-04`), staff provisioning (`F-03`).
 ## Open questions
 
 Resolved by `OQ-07`.
+
+## Implementation status
+
+The time-block persistence and staff/read-only routes are implemented and covered by API
+integration tests. Appointment-conflict checks and availability integration remain with `F-04`,
+because the appointment model and confirmation workflow are not implemented yet.
 
 ## Commit scope
 

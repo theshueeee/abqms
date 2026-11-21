@@ -26,6 +26,8 @@ last_verified: 2026-11-20
   and are excluded from availability and overlap checks.
 - `FR-TB-06` `DELETE /timeblocks/:id` releases a block after staff confirmation, records an audit
   event, and returns `404` for an unknown or already released block.
+- `POST /timeblocks` accepts `doctor_staff_id`, ISO `start_datetime`, ISO `end_datetime`,
+  `block_reason`, and optional `notes`; `DELETE /timeblocks/:id` requires `{ "confirm": true }`.
 - Block creation and appointment confirmation use the same doctor-day transaction lock. A block
   cannot overlap a `confirmed` appointment, and an appointment cannot be confirmed inside an active
   block.

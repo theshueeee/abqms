@@ -4,7 +4,7 @@ title: Open Questions & Pending Decisions
 status: active
 parent: docs/SPEC.md
 related: [index/business-rules.md, requirements/non-functional.md, traceability.md]
-last_verified: 2026-11-20
+last_verified: 2026-11-21
 ---
 
 # Open Questions & Pending Decisions
@@ -40,6 +40,11 @@ doctor.
 **Decision needed:** (a) add a non-login `doctor` value to the enum, (b) split out a `Doctor` entity, or
 (c) introduce a doctor-resource table that assistants manage.
 
+**Working assumption (2026-11-21):** F-04 seeds a placeholder staff-linked doctor resource
+(`20000000-0000-4000-8000-000000000001`, `General Clinic Doctor`) whose password hash matches no
+known password. It cannot sign in and exists only so default bookings have a valid FK. Revisit this
+row when the question is decided.
+
 ## OQ-03 — Two competing reschedule-limit mechanisms
 
 **Problem:** `Patient.reschedule_credits` (decremented, resets on a rolling window) and
@@ -70,6 +75,11 @@ may toggle it).
 **Problem:** `BR-04` gates the entire product (walk-in vs booking) but no clock boundary, holiday rule or
 override mechanism is specified, and no clinic-hours configuration exists.
 **Affects:** `F-04` (`FR-BOOK-04`), `F-07` (`FR-WALKIN-08`), `F-05`
+**Status: decided 2026-11-20.** The operating timezone is `Asia/Kuala_Lumpur` (UTC+8). PM begins
+at 12:00 local time and ends at 17:00 local time; `[12:00,17:00)` is the PM booking window. AM is
+before 12:00 and walk-in/queue mode applies. The PM window is also the upper boundary for F-04
+availability and booking. Holiday and override behavior remains with the respective later features.
+
 ## OQ-07 — Time-block deletion destroys its own record
 
 **Problem:** `TimeBlock` has no soft-delete/active flag, yet `DELETE /timeblocks/:id` exists. A hard
@@ -124,6 +134,11 @@ manual-review-only.
 `pending` → `confirmed` trigger is undefined.
 **Affects:** `F-04`, `F-05`, `F-09` (`FR-MASTER-03`) · `data-model/queue.md`
 **Decision needed:** name the authoritative machine and the projection rule onto the other.
+**Status: decided 2026-11-20.** `Appointment.status` is authoritative. A successful online booking
+created by F-04 is stored as `confirmed`; `pending` remains reserved for workflows that explicitly
+introduce it. `QueueTicket.queue_status` is created and projected only after check-in/queue actions
+and must mirror its corresponding appointment transition. The mappings are waiting/called/in-progress
+after `checked_in`, completed after `completed`, and no-show after `no_show`.
 
 ## OQ-12 — Missing tables for reset tokens, sessions and email delivery
 
@@ -162,6 +177,12 @@ maximum follow-up chain depth.
 **Affects:** `F-04` (`FR-BOOK-02`…`05`, blocks), `F-07`, `F-16` · `F-13` (cap utilisation)
 **Decision needed:** specify the slot grid (slot interval, working hours per doctor, how doctor
 availability is stored) and state explicitly which appointment kinds consume the daily cap.
+**Status: decided 2026-11-20.** Remove the 15-patient-per-doctor-per-day booking cap from F-04.
+No daily-count field or cap check is required. Slots use 30-minute starts from 12:00 through 17:00
+local time, with `AppointmentType.default_duration_minutes` determining whether a slot fit ends
+before 17:00. Active `TimeBlock` rows and existing non-cancelled/non-no-show appointments exclude
+overlapping slots. The OQ-15 follow-up, walk-in, emergency, and follow-up capacity implications are
+out of scope unless the removed cap is later reintroduced by a separate decision.
 
 ## OQ-16 — `queue_number` format is unexplained
 
@@ -209,6 +230,11 @@ specified. Separately, the UI needs endpoints that do not exist in the spec:
 | Emergency-override **impact preview** (promised in the workflow, no route) | `F-10` (`FR-OVR-03`) |
 | Slot availability query | `F-04` (`FR-BOOK-09`) |
 | Logout / session invalidation | `F-02` |
+**Status: decided 2026-11-20 for F-04.** F-04 adds `GET /appointments/availability`,
+`GET /appointment-types`, and `GET /doctors`. It also uses the existing `GET /appointments` and
+`POST /appointments` routes. Reference routes are authenticated and read-only. JSON errors use
+the existing repository convention `{ "error": "message" }` for F-04; broader pagination,
+rate-limit, versioning, and the remaining missing-route decisions stay open.
 
 ## OQ-20 — OCR provider, upload limits and PII retention
 

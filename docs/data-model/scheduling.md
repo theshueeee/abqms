@@ -4,7 +4,7 @@ title: Data Model — Scheduling
 status: active
 parent: docs/SPEC.md
 related: [data-model/_overview.md, index/business-rules.md]
-last_verified: 2026-11-20
+last_verified: 2026-11-21
 ---
 
 # Data Model — Scheduling
@@ -74,4 +74,13 @@ They remain available through audit history. A block cannot overlap an appointme
 
 PM slots start every 30 minutes from 12:00 local time until a selected appointment duration fits
 before 17:00. Active `TimeBlock` rows and existing pending/confirmed/checked-in appointments remove
-overlapping slots. The 15-patient-per-day cap is removed by `OQ-15`.
+overlapping slots. Slots that have already started in `Asia/Kuala_Lumpur` are never returned
+(`FR-BOOK-11`). The 15-patient-per-day cap is removed by `OQ-15`.
+
+## Default booking resources
+
+The patient booking flow does not select a service or doctor. When `appointment_type_id` or
+`doctor_staff_id` are omitted, the API resolves the active default `AppointmentType` (seeded
+`General Checkup`) and the seeded staff-linked doctor resource `General Clinic Doctor`
+(`20000000-0000-4000-8000-000000000001`). `StaffRole` has no doctor value, so the resource is a
+placeholder row that cannot sign in — the model conflict stays tracked by `OQ-02`.

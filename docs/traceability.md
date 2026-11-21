@@ -4,7 +4,7 @@ title: Traceability Matrix
 status: active
 parent: docs/SPEC.md
 related: [requirements/open-questions.md, requirements/non-functional.md]
-last_verified: 2026-11-17
+last_verified: 2026-11-21
 ---
 
 # Traceability Matrix
@@ -23,7 +23,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `F-01` | Scaffold & Tooling | complete | tested | — | 6 | `chore(F-01)` |
 | `F-02` | Patient Auth & Account Recovery | complete | tested | OQ-19 (records route) | 9 | `feat(F-02)` |
 | `F-03` | Staff Provisioning & RBAC | complete | tested | — | 8 | `feat(F-03)` |
-| `F-04` | Appointment Types & PM Booking | complete | tested | — | 9 | `feat(F-04)` |
+| `F-04` | Appointment Types & PM Booking | complete | tested | — | 11 | `feat(F-04)` |
 | `F-05` | Check-in & Late Handling | blocked | specified | OQ-14, OQ-21 | 6 | `feat(F-05)` |
 | `F-06` | Reschedule & Cancellation | blocked | specified | OQ-03, OQ-09, OQ-19 | 8 | `feat(F-06)` |
 | `F-07` | Walk-in Registration (OCR + Manual) | blocked | specified | OQ-04, OQ-16, OQ-20, D-05 | 10 | `feat(F-07)` |
@@ -48,7 +48,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `BR-01` | 15 patients/doctor/day | removed | removed by `OQ-15` |
 | `BR-02` | <5 reschedules / rolling 30 days | `F-06`, `F-12` | ⚠ mechanism undecided (`OQ-03`) |
 | `BR-03` | 15-minute check-in window | `F-05` | ⚠ timezone needed (`OQ-14`) |
-| `BR-04` | AM = walk-in, PM = booked | `F-04`, `F-07` | PM `[12:00,17:00)` local (`OQ-06`) |
+| `BR-04` | AM = walk-in, PM = booked | `F-04`, `F-07` | PM `[12:00,17:00)` scheduled-time window (`OQ-06`); request not clock-gated |
 | `BR-05` | Override needs reason + audit | `F-10`, `F-13`, `F-15` | specified |
 | `BR-06` | Audit is silent and non-blocking | `F-15` | specified |
 | `BR-07` | Server-side RBAC on every route | `F-03` | specified |
@@ -155,12 +155,14 @@ whether it is done. `Status` follows the same vocabulary.
 | `FR-BOOK-01` | `POST /appointments` | integration | tested |
 | `FR-BOOK-02` | `POST /appointments` | double-book negative | tested |
 | `FR-BOOK-03` | `POST /appointments` | removed cap | decided |
-| `FR-BOOK-04` | `POST /appointments` | mode gate (mock clock) | tested |
+| `FR-BOOK-04` | `POST /appointments` | PM window/future-slot validation | tested |
 | `FR-BOOK-05` | `POST /appointments` | time-block exclusion | tested |
 | `FR-BOOK-06` | → `F-14` | email job ≤1 | specified |
-| `FR-BOOK-07` | `GET /appointments` | ownership integration | tested |
+| `FR-BOOK-07` | `GET /appointments` | ownership integration + dashboard upcoming Cypress | tested |
 | `FR-BOOK-08` | `POST /appointments` | suspended negative | tested |
-| `FR-BOOK-09` | `GET /appointments/availability` | slot generation integration | tested |
+| `FR-BOOK-09` | `GET /appointments/availability` | slot generation + defaults integration + F-04 Cypress | tested |
+| `FR-BOOK-10` | `GET /appointments/availability`, `POST /appointments` | `scheduled_datetime`-only integration + defaults Cypress | tested |
+| `FR-BOOK-11` | `GET /appointments/availability` | elapsed-slot mock-clock integration | tested |
 
 ### `F-05` Check-in & Late Handling — `features/F-05-checkin-and-late-handling.md`
 

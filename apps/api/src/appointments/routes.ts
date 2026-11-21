@@ -9,10 +9,14 @@ const PM_START_MINUTES = 12 * 60;
 const PM_END_MINUTES = 17 * 60;
 const SLOT_INTERVAL_MINUTES = 30;
 const TIME_ZONE = "Asia/Kuala_Lumpur";
+const DEFAULT_APPOINTMENT_TYPE_ID = "10000000-0000-4000-8000-000000000001";
+const DEFAULT_DOCTOR_STAFF_ID = "20000000-0000-4000-8000-000000000001";
 
+// Service and doctor are clinic defaults for the patient booking flow, so both
+// reference ids are optional and resolved server-side when the UI omits them.
 const bookingSchema = z.object({
-  appointment_type_id: z.string().uuid(),
-  doctor_staff_id: z.string().uuid(),
+  appointment_type_id: z.string().uuid().optional(),
+  doctor_staff_id: z.string().uuid().optional(),
   scheduled_datetime: z.coerce.date(),
   patient_id: z.string().uuid().optional(),
 });
@@ -85,6 +89,45 @@ async function lockDoctorDay(
   await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))`;
 }
 
+type DbClient = Prisma.TransactionClient | typeof prisma;
+
+async function resolveAppointmentType(
+  client: DbClient,
+  appointmentTypeId?: string,
+) {
+  if (appointmentTypeId) {
+    return client.appointmentType.findFirst({
+      where: { appointment_type_id: appointmentTypeId, is_active: true },
+    });
+  }
+  const preferred = await client.appointmentType.findFirst({
+    where: { appointment_type_id: DEFAULT_APPOINTMENT_TYPE_ID, is_active: true },
+  });
+  return preferred ?? client.appointmentType.findFirst({
+    where: { is_active: true },
+    orderBy: { appointment_type: "asc" },
+  });
+}
+
+async function resolveDoctor(client: DbClient, doctorStaffId?: string) {
+  const selection = { staff_id: true, full_name: true } as const;
+  if (doctorStaffId) {
+    return client.staff.findFirst({
+      where: { staff_id: doctorStaffId, is_active: true },
+      select: selection,
+    });
+  }
+  const preferred = await client.staff.findFirst({
+    where: { staff_id: DEFAULT_DOCTOR_STAFF_ID, is_active: true },
+    select: selection,
+  });
+  return preferred ?? client.staff.findFirst({
+    where: { is_active: true },
+    orderBy: { created_at: "asc" },
+    select: selection,
+  });
+}
+
 export function createAppointmentsRouter(): Router {
   const router = Router();
 
@@ -96,24 +139,28 @@ export function createAppointmentsRouter(): Router {
     const appointmentTypeId = typeof request.query.appointment_type_id === "string"
       ? request.query.appointment_type_id
       : undefined;
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !doctorId || !appointmentTypeId) {
-      response.status(400).json({ error: "date, doctor_staff_id, and appointment_type_id are required" });
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      response.status(400).json({ error: "date is required" });
       return;
     }
-    if (!z.string().uuid().safeParse(doctorId).success ||
-        !z.string().uuid().safeParse(appointmentTypeId).success) {
+    if ((doctorId && !z.string().uuid().safeParse(doctorId).success) ||
+        (appointmentTypeId && !z.string().uuid().safeParse(appointmentTypeId).success)) {
       response.status(400).json({ error: "Invalid doctor or appointment type" });
       return;
     }
 
     try {
       const [year, month, day] = date.split("-").map(Number);
-      const doctor = await prisma.staff.findUnique({ where: { staff_id: doctorId }, select: { staff_id: true } });
-      const appointmentType = await prisma.appointmentType.findFirst({
-        where: { appointment_type_id: appointmentTypeId, is_active: true },
-      });
-      if (!doctor || !appointmentType) {
-        response.status(404).json({ error: "Doctor or appointment type not found" });
+      const [appointmentType, doctor] = await Promise.all([
+        resolveAppointmentType(prisma, appointmentTypeId),
+        resolveDoctor(prisma, doctorId),
+      ]);
+      if (!appointmentType) {
+        response.status(404).json({ error: "Appointment type not found" });
+        return;
+      }
+      if (!doctor) {
+        response.status(404).json({ error: "Clinic doctor resource is not configured" });
         return;
       }
 
@@ -122,7 +169,7 @@ export function createAppointmentsRouter(): Router {
       const [blocks, appointments] = await Promise.all([
         prisma.timeBlock.findMany({
           where: {
-            doctor_staff_id: doctorId,
+            doctor_staff_id: doctor.staff_id,
             deleted_at: null,
             start_datetime: { lt: dayEnd },
             end_datetime: { gt: dayStart },
@@ -130,7 +177,7 @@ export function createAppointmentsRouter(): Router {
         }),
         prisma.appointment.findMany({
           where: {
-            doctor_staff_id: doctorId,
+            doctor_staff_id: doctor.staff_id,
             scheduled_datetime: { gte: dayStart, lt: dayEnd },
             status: { in: [
               AppointmentStatus.pending,
@@ -142,6 +189,7 @@ export function createAppointmentsRouter(): Router {
         }),
       ]);
 
+      const now = clinicNow();
       const slots: Array<{ scheduled_datetime: string }> = [];
       for (
         let startMinutes = PM_START_MINUTES;
@@ -151,6 +199,8 @@ export function createAppointmentsRouter(): Router {
         const hour = Math.floor(startMinutes / 60);
         const minute = startMinutes % 60;
         const slotStart = utcFromLocalDate(year, month, day, hour, minute);
+        // Elapsed slots (already started in Asia/Kuala_Lumpur) are never bookable.
+        if (slotStart <= now) continue;
         const slotEnd = addMinutes(slotStart, appointmentType.default_duration_minutes);
         const blocked = blocks.some((block) => overlaps(slotStart, slotEnd, block.start_datetime, block.end_datetime));
         const occupied = appointments.some((appointment) => {
@@ -164,7 +214,7 @@ export function createAppointmentsRouter(): Router {
           slots.push({ scheduled_datetime: slotStart.toISOString() });
         }
       }
-      response.json({ slots });
+      response.json({ slots, appointment_type: appointmentType, doctor });
     } catch (error) {
       console.error("Availability query failed", error);
       response.status(500).json({ error: "Unable to query availability" });
@@ -232,13 +282,6 @@ export function createAppointmentsRouter(): Router {
       return;
     }
 
-    const nowLocal = localDateParts(clinicNow());
-    const nowMinutes = nowLocal.hour * 60 + nowLocal.minute;
-    if (nowMinutes < PM_START_MINUTES || nowMinutes >= PM_END_MINUTES) {
-      response.status(409).json({ error: "Online booking is available only during PM mode" });
-      return;
-    }
-
     const scheduledLocal = localDateParts(input.scheduled_datetime);
     const scheduledMinutes = scheduledLocal.hour * 60 + scheduledLocal.minute;
     if (scheduledMinutes < PM_START_MINUTES || scheduledMinutes >= PM_END_MINUTES) {
@@ -256,17 +299,16 @@ export function createAppointmentsRouter(): Router {
 
     try {
       const result = await prisma.$transaction(async (transaction) => {
-        await lockDoctorDay(transaction, input.doctor_staff_id, input.scheduled_datetime);
-        const [patient, doctor, appointmentType] = await Promise.all([
-          transaction.patient.findUnique({ where: { patient_id: patientId } }),
-          transaction.staff.findUnique({ where: { staff_id: input.doctor_staff_id } }),
-          transaction.appointmentType.findFirst({
-            where: { appointment_type_id: input.appointment_type_id, is_active: true },
-          }),
+        const [appointmentType, doctor] = await Promise.all([
+          resolveAppointmentType(transaction, input.appointment_type_id),
+          resolveDoctor(transaction, input.doctor_staff_id),
         ]);
-        if (!patient || patient.account_status === "suspended") return { kind: "patient" as const };
         if (!doctor) return { kind: "doctor" as const };
         if (!appointmentType) return { kind: "type" as const };
+
+        await lockDoctorDay(transaction, doctor.staff_id, input.scheduled_datetime);
+        const patient = await transaction.patient.findUnique({ where: { patient_id: patientId } });
+        if (!patient || patient.account_status === "suspended") return { kind: "patient" as const };
 
         const scheduledEnd = addMinutes(input.scheduled_datetime, appointmentType.default_duration_minutes);
         if (scheduledMinutes + appointmentType.default_duration_minutes > PM_END_MINUTES) {
@@ -277,7 +319,7 @@ export function createAppointmentsRouter(): Router {
         const dayEnd = addMinutes(dayStart, 24 * 60);
         const overlapCandidates = await transaction.appointment.findMany({
           where: {
-            doctor_staff_id: input.doctor_staff_id,
+            doctor_staff_id: doctor.staff_id,
             scheduled_datetime: { gte: dayStart, lt: dayEnd },
             status: { in: [
               AppointmentStatus.pending,
@@ -299,7 +341,7 @@ export function createAppointmentsRouter(): Router {
 
         const block = await transaction.timeBlock.findFirst({
           where: {
-            doctor_staff_id: input.doctor_staff_id,
+            doctor_staff_id: doctor.staff_id,
             deleted_at: null,
             start_datetime: { lt: scheduledEnd },
             end_datetime: { gt: input.scheduled_datetime },
@@ -310,8 +352,8 @@ export function createAppointmentsRouter(): Router {
         const appointment = await transaction.appointment.create({
           data: {
             patient_id: patientId!,
-            appointment_type_id: input.appointment_type_id,
-            doctor_staff_id: input.doctor_staff_id,
+            appointment_type_id: appointmentType.appointment_type_id,
+            doctor_staff_id: doctor.staff_id,
             scheduled_datetime: input.scheduled_datetime,
             booking_channel: "online",
             status: AppointmentStatus.confirmed,

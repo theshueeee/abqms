@@ -4,7 +4,7 @@ title: Open Questions & Pending Decisions
 status: active
 parent: docs/SPEC.md
 related: [index/business-rules.md, requirements/non-functional.md, traceability.md]
-last_verified: 2026-11-20
+last_verified: 2026-11-21
 ---
 
 # Open Questions & Pending Decisions
@@ -39,6 +39,11 @@ doctor.
 **Affects:** `F-03`, `F-04`, `F-07`, `F-09`, `F-11`, `F-16` — every booking and queue feature
 **Decision needed:** (a) add a non-login `doctor` value to the enum, (b) split out a `Doctor` entity, or
 (c) introduce a doctor-resource table that assistants manage.
+
+**Working assumption (2026-11-21):** F-04 seeds a placeholder staff-linked doctor resource
+(`20000000-0000-4000-8000-000000000001`, `General Clinic Doctor`) whose password hash matches no
+known password. It cannot sign in and exists only so default bookings have a valid FK. Revisit this
+row when the question is decided.
 
 ## OQ-03 — Two competing reschedule-limit mechanisms
 

@@ -8,6 +8,8 @@ import { hashPassword } from "../src/auth/security";
 
 const marker = `appointment-test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const password = "correct horse battery staple";
+const DEFAULT_APPOINTMENT_TYPE_ID = "10000000-0000-4000-8000-000000000001";
+const DEFAULT_DOCTOR_STAFF_ID = "20000000-0000-4000-8000-000000000001";
 let server: Server;
 let baseUrl: string;
 let doctorId: string;
@@ -167,4 +169,72 @@ test("patients list only their own appointments and reference data is readable",
   assert.equal(types.status, 200);
   const doctors = await request("/api/doctors", { headers: { cookie: patientCookie } });
   assert.equal(doctors.status, 200);
+});
+
+test("availability resolves default resources and excludes elapsed PM slots", async () => {
+  const previousMockNow = process.env.CLINIC_MOCK_NOW;
+  process.env.CLINIC_MOCK_NOW = "2030-01-10T05:30:00.000Z"; // 13:30 Asia/Kuala_Lumpur
+  try {
+    const availability = await request("/api/appointments/availability?date=2030-01-10", {
+      headers: { cookie: patientCookie },
+    });
+    assert.equal(availability.status, 200);
+    const payload = await availability.json() as {
+      slots: Array<{ scheduled_datetime: string }>;
+      appointment_type: { appointment_type_id: string };
+      doctor: { staff_id: string };
+    };
+    assert.equal(payload.appointment_type.appointment_type_id, DEFAULT_APPOINTMENT_TYPE_ID);
+    assert.equal(payload.doctor.staff_id, DEFAULT_DOCTOR_STAFF_ID);
+    assert.deepEqual(
+      payload.slots.map((slot) => slot.scheduled_datetime),
+      [
+        "2030-01-10T06:00:00.000Z",
+        "2030-01-10T06:30:00.000Z",
+        "2030-01-10T07:00:00.000Z",
+        "2030-01-10T07:30:00.000Z",
+        "2030-01-10T08:00:00.000Z",
+        "2030-01-10T08:30:00.000Z",
+      ],
+    );
+  } finally {
+    if (previousMockNow === undefined) {
+      delete process.env.CLINIC_MOCK_NOW;
+    } else {
+      process.env.CLINIC_MOCK_NOW = previousMockNow;
+    }
+  }
+});
+
+test("booking resolves defaults and is not gated by the current PM clock", async () => {
+  const previousMockNow = process.env.CLINIC_MOCK_NOW;
+  process.env.CLINIC_MOCK_NOW = "2030-01-11T15:00:00.000Z"; // 23:00 Asia/Kuala_Lumpur
+  try {
+    const booking = await request("/api/appointments", {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: patientCookie },
+      body: JSON.stringify({ scheduled_datetime: "2030-01-12T04:00:00.000Z" }),
+    });
+    if (booking.status !== 201) {
+      throw new Error(`default booking failed: ${booking.status} ${await booking.text()}`);
+    }
+    const payload = await booking.json() as {
+      appointment: {
+        appointment_type_id: string;
+        doctor_staff_id: string;
+        scheduled_datetime: string;
+        status: string;
+      };
+    };
+    assert.equal(payload.appointment.appointment_type_id, DEFAULT_APPOINTMENT_TYPE_ID);
+    assert.equal(payload.appointment.doctor_staff_id, DEFAULT_DOCTOR_STAFF_ID);
+    assert.equal(payload.appointment.scheduled_datetime, "2030-01-12T04:00:00.000Z");
+    assert.equal(payload.appointment.status, "confirmed");
+  } finally {
+    if (previousMockNow === undefined) {
+      delete process.env.CLINIC_MOCK_NOW;
+    } else {
+      process.env.CLINIC_MOCK_NOW = previousMockNow;
+    }
+  }
 });

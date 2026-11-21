@@ -4,7 +4,7 @@ title: API — Appointments
 status: active
 parent: docs/SPEC.md
 related: [api/_conventions.md, index/business-rules.md, data-model/scheduling.md, features/F-04-appointment-types-and-booking.md]
-last_verified: 2026-11-20
+last_verified: 2026-11-21
 ---
 
 # API — Appointments
@@ -14,7 +14,7 @@ Owns PM booking, check-in, reschedule, cancel and follow-up creation.
 | Method | Path | Access | Purpose | Feature |
 |---|---|---|---|---|
 | `GET` | `/appointments` | patient: own only; staff: filterable by date/doctor | List bookings | `F-04` |
-| `GET` | `/appointments/availability` | authenticated | List unoccupied PM slots for a doctor/type/date | `F-04` |
+| `GET` | `/appointments/availability` | authenticated | List unoccupied PM slots for a date; optional doctor/type overrides | `F-04` |
 | `POST` | `/appointments` | patient (own) / staff | Create a booking | `F-04` |
 | `PATCH` | `/appointments/:id/reschedule` | owner / staff | Move a booking | `F-06` |
 | `PATCH` | `/appointments/:id/cancel` | owner / staff | Cancel a booking | `F-06` |
@@ -30,6 +30,9 @@ Owns PM booking, check-in, reschedule, cancel and follow-up creation.
   `[12:00,17:00)`.
 - `FR-BOOK-05` Booking must reject slots overlapping a `TimeBlock`.
 - `FR-BOOK-06` A successful booking triggers the confirmation email automatically (`NFR-AUTO-01`).
+- `FR-BOOK-10` The patient flow omits service/doctor; the API resolves the active default
+  appointment type and doctor resource when ids are omitted.
+- `FR-BOOK-11` Availability excludes PM slots that have already started in `Asia/Kuala_Lumpur`.
 - `FR-CHKIN-01` Check-in is accepted only inside the 15-minute window (`BR-03`).
 - `FR-CHKIN-02` Missing the window moves the appointment to `no_show` and prompts a reschedule.
 - `FR-CHKIN-03` Declining the reschedule cancels the appointment.
@@ -41,6 +44,26 @@ Owns PM booking, check-in, reschedule, cancel and follow-up creation.
 - `FR-RESCH-05` Cancellation records exactly one actor: `cancelled_by_patient_id` or
   `cancelled_by_staff_id`.
 - `FR-FUP-01` Follow-up creation sets `is_follow_up = true` and `parent_appointment_id`.
+
+## F-04 request contract
+
+- `GET /appointments/availability` requires `date` (`YYYY-MM-DD`, `Asia/Kuala_Lumpur`).
+  `doctor_staff_id` and `appointment_type_id` are optional overrides. When omitted, the active
+  default type and doctor resource are resolved server-side. The response is
+  `{ slots, appointment_type, doctor }`, where each slot is `{ scheduled_datetime }`
+  (`FR-BOOK-09`, `FR-BOOK-10`).
+- Slots that have already started are excluded (`FR-BOOK-11`). This includes every slot on a past
+  date.
+- `POST /appointments` requires `scheduled_datetime`. `appointment_type_id` and `doctor_staff_id`
+  remain accepted as optional overrides for staff flows. `patient_id` may only be supplied by staff
+  (`FR-BOOK-01`, `FR-BOOK-10`).
+- The request is not gated by the current clock; the scheduled time itself must be a future,
+  30-minute-grid PM slot (`FR-BOOK-04`).
+- An unknown/inactive appointment type returns `404 Appointment type not found`. A missing default
+  doctor resource returns `404 Clinic doctor resource is not configured`.
+- The seeded defaults are the `General Checkup` appointment type
+  (`10000000-0000-4000-8000-000000000001`) and the `General Clinic Doctor` staff-linked placeholder
+  (`20000000-0000-4000-8000-000000000001`, `OQ-02`).
 
 ## Status transitions
 

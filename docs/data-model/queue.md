@@ -41,8 +41,8 @@ last_verified: 2026-09-15
 | Consultation finished | `completed` | `completed` |
 | Did not arrive | `no_show` | `no_show` |
 
-No DB constraint or written rule keeps these in sync — the owning feature (`F-09`) must define the
-transition contract, and a schema-level fix may be needed (`OQ-11`).
+`Appointment.status` is authoritative (`OQ-11`). A successful F-04 booking is `confirmed`; queue
+status is projected after check-in and queue actions. F-09 owns the runtime projection.
 
 ## Ordering rules
 

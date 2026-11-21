@@ -19,6 +19,20 @@ enum StaffRole {
   admin
 }
 
+enum AppointmentStatus {
+  pending
+  confirmed
+  checked_in
+  completed
+  cancelled
+  no_show
+}
+
+enum BookingChannel {
+  online
+  walk_in
+}
+
 enum SessionActorType {
   patient
   staff
@@ -40,6 +54,7 @@ model Patient {
   updated_at           DateTime      @updatedAt
   sessions             Session[]
   reset_tokens         PasswordResetToken[]
+  appointments         Appointment[]
 }
 
 model Staff {
@@ -59,6 +74,42 @@ model Staff {
   reset_tokens   PasswordResetToken[]
   doctor_blocks  TimeBlock[] @relation("TimeBlockDoctor")
   created_blocks TimeBlock[] @relation("TimeBlockCreator")
+  appointments   Appointment[] @relation("AppointmentDoctor")
+}
+
+model AppointmentType {
+  appointment_type_id     String        @id @default(uuid()) @db.Uuid
+  appointment_type        String
+  default_duration_minutes Int
+  is_active               Boolean       @default(true)
+  appointments            Appointment[]
+}
+
+model Appointment {
+  appointment_id       String            @id @default(uuid()) @db.Uuid
+  patient_id           String            @db.Uuid
+  appointment_type_id  String            @db.Uuid
+  doctor_staff_id      String            @db.Uuid
+  scheduled_datetime   DateTime
+  booking_channel      BookingChannel
+  status               AppointmentStatus @default(confirmed)
+  is_follow_up         Boolean           @default(false)
+  parent_appointment_id String?          @db.Uuid
+  reschedule_count     Int               @default(0)
+  cancellation_reason_id String?         @db.Uuid
+  cancelled_by_patient_id String?        @db.Uuid
+  cancelled_by_staff_id String?          @db.Uuid
+  created_at           DateTime          @default(now())
+  updated_at           DateTime          @updatedAt
+  patient              Patient           @relation(fields: [patient_id], references: [patient_id])
+  appointment_type     AppointmentType   @relation(fields: [appointment_type_id], references: [appointment_type_id])
+  doctor               Staff             @relation("AppointmentDoctor", fields: [doctor_staff_id], references: [staff_id])
+  parent_appointment   Appointment?      @relation("AppointmentFollowUp", fields: [parent_appointment_id], references: [appointment_id])
+  follow_ups           Appointment[]     @relation("AppointmentFollowUp")
+
+  @@index([doctor_staff_id, scheduled_datetime, status])
+  @@index([patient_id, scheduled_datetime])
+  @@index([appointment_type_id])
 }
 
 model Session {

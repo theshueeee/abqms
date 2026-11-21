@@ -24,13 +24,13 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `F-02` | Patient Auth & Account Recovery | complete | tested | OQ-19 (records route) | 9 | `feat(F-02)` |
 | `F-03` | Staff Provisioning & RBAC | complete | tested | — | 8 | `feat(F-03)` |
 | `F-04` | Appointment Types & PM Booking | complete | tested | — | 11 | `feat(F-04)` |
-| `F-05` | Check-in & Late Handling | blocked | specified | OQ-14, OQ-21 | 6 | `feat(F-05)` |
+| `F-05` | Check-in & Late Handling | blocked | built | F-06 (cancel route), queue model | 6 | `feat(F-05)` |
 | `F-06` | Reschedule & Cancellation | blocked | specified | OQ-03, OQ-09, OQ-19 | 8 | `feat(F-06)` |
 | `F-07` | Walk-in Registration (OCR + Manual) | blocked | specified | OQ-04, OQ-16, OQ-20, D-05 | 10 | `feat(F-07)` |
 | `F-08` | Live Queue View (patient-facing) | blocked | specified | OQ-16, OQ-17, OQ-18 | 7 | `feat(F-08)` |
 | `F-09` | Master View & Call-Next | blocked | specified | OQ-05, OQ-11, OQ-13, OQ-18 | 9 | `feat(F-09)` |
 | `F-10` | Emergency Override | blocked | specified | OQ-13, OQ-19 | 7 | `feat(F-10)` |
-| `F-11` | Time-Block Management | specified | built | — | 7 | `feat(F-11)` |
+| `F-11` | Time-Block Management | specified | tested | — | 7 | `feat(F-11)` |
 | `F-12` | Flagging & Suspension Review | blocked | specified | OQ-10, OQ-21 | 9 | `feat(F-12)` |
 | `F-13` | Analytics Dashboard | blocked | specified | OQ-17, OQ-21, OQ-22 | 8 | `feat(F-13)` |
 | `F-14` | Notifications | blocked | specified | OQ-12, OQ-14, D-06 | 8 | `feat(F-14)` |
@@ -47,7 +47,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 |---|---|---|---|
 | `BR-01` | 15 patients/doctor/day | removed | removed by `OQ-15` |
 | `BR-02` | <5 reschedules / rolling 30 days | `F-06`, `F-12` | ⚠ mechanism undecided (`OQ-03`) |
-| `BR-03` | 15-minute check-in window | `F-05` | ⚠ timezone needed (`OQ-14`) |
+| `BR-03` | 15-minute check-in window | `F-05` | implemented — window semantics fixed in `features/F-05-checkin-and-late-handling.md` |
 | `BR-04` | AM = walk-in, PM = booked | `F-04`, `F-07` | PM `[12:00,17:00)` scheduled-time window (`OQ-06`); request not clock-gated |
 | `BR-05` | Override needs reason + audit | `F-10`, `F-13`, `F-15` | specified |
 | `BR-06` | Audit is silent and non-blocking | `F-15` | specified |
@@ -93,16 +93,17 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `OQ-11` | `F-04`, `F-05`, `F-09` | decided |
 | `OQ-12` | `F-02`, `F-14` | decided for F-02; open for F-14 |
 | `OQ-13` | `F-08`, `F-09`, `F-10` | open |
-| `OQ-14` | `F-05`, `F-07`, `F-13`, `F-14` | open |
+| `OQ-14` | `F-05`, `F-07`, `F-13`, `F-14` | decided |
 | `OQ-15` | `F-04`, `F-07`, `F-13`, `F-16` | decided |
 | `OQ-16` | `F-07`, `F-08` | open |
 | `OQ-17` | `F-08`, `F-13` | open |
 | `OQ-18` | `F-08`, `F-09` | open |
 | `OQ-19` | `F-02`, `F-04`, `F-06`, `F-10`, all | partial — decided for F-04 |
 | `OQ-20` | `F-07`, `F-14` | open |
-| `OQ-21` | `F-05`, `F-12`, `F-13`, `F-15` | open |
+| `OQ-21` | `F-05`, `F-12`, `F-13`, `F-15` | decided for F-05; open for F-12/F-13/F-15 |
 | `OQ-22` | every feature | decided for F-02; open for remaining NFRs |
 | `OQ-23` | `F-07`, `F-02` | open |
+| `OQ-24` | `F-05`, `F-09`, `F-13` | open |
 | `D-01`…`D-06` | `F-01` (+ `F-07`, `F-14`) | open |
 
 ## 6. Functional-requirement index
@@ -168,12 +169,12 @@ whether it is done. `Status` follows the same vocabulary.
 
 | ID | API / artifact | Test | Status |
 |---|---|---|---|
-| `FR-CHKIN-01` | `POST /appointments/:id/checkin` | window boundary unit | specified ⚠ |
-| `FR-CHKIN-02` | same | late → `no_show` integration | specified |
-| `FR-CHKIN-03` | `PATCH …/cancel` | decline → cancelled | specified |
-| `FR-CHKIN-04` | same | terminal-state negative | specified |
-| `FR-CHKIN-05` | → `F-09` | Master View reflects check-in | specified |
-| `FR-CHKIN-06` | same | non-owner negative | specified  |
+| `FR-CHKIN-01` | `POST /appointments/:id/checkin` | window boundary unit | tested |
+| `FR-CHKIN-02` | same | late → `no_show` integration | tested |
+| `FR-CHKIN-03` | `PATCH …/cancel` | decline → cancelled | specified ⚠ blocked: `F-06` |
+| `FR-CHKIN-04` | same | terminal-state negative | tested |
+| `FR-CHKIN-05` | → `F-09` | Master View reflects check-in | specified ⚠ blocked: queue model |
+| `FR-CHKIN-06` | same | non-owner negative | tested |
 
 ### `F-06` Reschedule & Cancellation — `features/F-06-reschedule-and-cancel.md`
 
@@ -246,8 +247,8 @@ whether it is done. `Status` follows the same vocabulary.
 | ID | API / artifact | Test | Status |
 |---|---|---|---|
 | `FR-TB-01` | `POST /timeblocks` | integration | tested |
-| `FR-TB-02` | overlap validation | boundary unit | built |
-| `FR-TB-03` | → `F-04` | availability integration | specified |
+| `FR-TB-02` | overlap validation | boundary unit | tested |
+| `FR-TB-03` | → `F-04` | availability integration | tested |
 | `FR-TB-04` | free-text reason | unit | tested |
 | `FR-TB-05` | `GET /timeblocks` | filter integration | tested |
 | `FR-TB-06` | `DELETE /timeblocks/:id` | release integration + audit | tested |

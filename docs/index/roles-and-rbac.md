@@ -4,7 +4,7 @@ title: Roles and RBAC
 status: active
 parent: docs/SPEC.md
 related: [index/business-rules.md, api/_conventions.md, features/F-03-staff-provisioning-rbac.md]
-last_verified: 2026-09-15
+last_verified: 2026-11-21
 ---
 
 # Roles and RBAC
@@ -34,8 +34,9 @@ this file instead of restating permissions. Enforcement is `BR-07` / `NFR-RBAC-0
 | Read appointment types / doctors / cancel reasons | ✅ | ✅ | ✅ | `api/_conventions.md` (read-only reference data) |
 | Book appointment | ✅ own | ✅ | ✅ | `POST /appointments` |
 | List appointments | own only | filterable by date/doctor | filterable by date/doctor | `GET /appointments` |
-| Check in | own only (`OQ-21`) | ✅ | ✅ | `POST /appointments/:id/checkin` |
+| Check in | ✅ own only | ✅ | ✅ | `POST /appointments/:id/checkin` |
 | Reschedule / cancel | ✅ own | ✅ | ✅ | `api/appointments.md` |
+| Read own reschedule allowance | ✅ own | ✅ (`?patient_id=`) | ✅ | `GET /appointments/policy-limits` |
 | Walk-in OCR + register | ✅ | ✅ | ✅ | `api/walkin-queue.md` |
 | Live queue position | ✅ own ticket | ✅ | ✅ | `GET /queue/live/:doctor_staff_id` |
 | Master View | ❌ | ✅ | ✅ | `GET /queue/master-view` |
@@ -53,3 +54,6 @@ this file instead of restating permissions. Enforcement is `BR-07` / `NFR-RBAC-0
   authentication even with correct credentials (`F-03`).
 - Read-only reference data (appointment types, doctors, cancellation reasons) must be readable by
   patients or the booking UI cannot function — see `OQ-19`.
+- Reschedule and cancel are refused on terminal statuses (`cancelled`, `completed`, `no_show`,
+  `checked_in`). The single exception is the `FR-CHKIN-03` decline path, which cancels a `no_show`
+  appointment (`OQ-25`).

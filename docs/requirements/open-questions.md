@@ -53,6 +53,12 @@ row when the question is decided.
 **Decision needed:** pick one authoritative store, and define the exact window boundary (rolling 30
 days from now, inclusive/exclusive) and the reset semantics.
 
+**Status: decided 2026-11-22.** `RescheduleLog` is the authoritative store for `BR-02`. Budget =
+`RescheduleLog` rows for the patient with `rescheduled_at > now − 30 days` (rolling, exclusive lower
+bound, evaluated in UTC instants). `Patient.reschedule_credits` and `Appointment.reschedule_count`
+are retired and dropped in the same migration. `BR-02` stands unchanged: the 5th reschedule
+succeeds, the 6th inside the window is refused. No semester concept exists.
+
 ## OQ-04 — Unregistered walk-ins are unrepresentable
 
 **Problem:** `QueueTicket.appointment_id` is a non-null 1:1 and `patient_id` → `Patient` is required,
@@ -118,6 +124,10 @@ nullable so nothing enforces it; actor exclusivity between `cancelled_by_patient
 **Decision needed:** make the column non-null (or add a check constraint) and enforce exactly one actor
 at the database level too.
 
+**Status: decided 2026-11-22.** Columns stay nullable (non-cancelled rows need null). Two PostgreSQL
+`CHECK` constraints enforce the contract: `cancellation_reason_id` required and exactly one of
+`cancelled_by_patient_id` / `cancelled_by_staff_id` set when `status = 'cancelled'`.
+
 ## OQ-10 — Account-status ↔ suspension-outcome mapping, and two untriggered signals
 
 **Problem:** `Patient.account_status` (`active`/`suspended`/`flagged`) and `SuspensionRecord.outcome`
@@ -126,6 +136,11 @@ trigger — "suspicious cancellations" and "emergency-override abuse" have no th
 **Affects:** `F-12` (`FR-MOD-01`…`04`) · `F-13` (`FR-AN-07`)
 **Decision needed:** state the mapping explicitly and define thresholds, or declare those two signals
 manual-review-only.
+
+**Status: decided (narrow slice) 2026-11-22.** A system `BR-02` breach from `F-06` writes
+`SuspensionRecord(triggered_by = system, outcome = pending)` and sets
+`Patient.account_status = flagged`. Suspension/reinstatement review and the other two signals stay
+with `F-12`.
 
 ## OQ-11 — The two status machines are unlinked
 
@@ -167,6 +182,18 @@ boundaries (`OQ-06`) and "per day" for the cap (`BR-01`) all untestable.
 **Affects:** `F-05`, `F-07`, `F-13`, `F-14` · `data-model/_overview.md`
 **Decision needed:** declare the operating timezone (expected: `Asia/Kuala_Lumpur`, UTC+8), the storage
 convention (UTC in DB, rendered local), and the definition of a "queue day".
+
+**Status: decided 2026-11-21.** The clinic operates in `Asia/Kuala_Lumpur` (UTC+8). Timestamps are
+stored in UTC and rendered in local time. A "queue day" is the local calendar day
+`[00:00, 24:00)` in that zone. The PM window stays `[12:00, 17:00)` local.
+
+The zone is fixed at UTC+8 with no daylight-saving transitions, so the local↔UTC conversion is a
+constant offset. Any future change of operating zone must revisit the fixed-offset conversion
+helpers in `apps/api/src/appointments/routes.ts` before it is trusted.
+
+For `F-05` this makes the check-in window testable. The 15-minute check-in rule (`BR-03`) is
+instant arithmetic on a stored `DateTime`, so the zone decision does not change the boundary
+result — it fixes how the boundary is expressed and reported.
 
 ## OQ-15 — Slot generation and cap scope are unspecified
 
@@ -236,6 +263,9 @@ specified. Separately, the UI needs endpoints that do not exist in the spec:
 the existing repository convention `{ "error": "message" }` for F-04; broader pagination,
 rate-limit, versioning, and the remaining missing-route decisions stay open.
 
+**Status: decided (partial) 2026-11-22.** Adds authenticated read-only `GET /cancellation-reasons`
+(returning `is_active AND NOT is_system` reasons), seeded alongside appointment types.
+
 ## OQ-20 — OCR provider, upload limits and PII retention
 
 **Problem:** `POST /walkin/ocr` is specified with no provider (`D-05`), no request format (multipart?),
@@ -260,6 +290,11 @@ failure → manual-fallback contract.
 **Affects:** `F-05`, `F-12`, `F-13`, `F-15` · `index/roles-and-rbac.md`
 **Decision needed:** pin each capability to a role in `index/roles-and-rbac.md`, which is authoritative.
 
+**Status: partly decided 2026-11-21 — check-in only.** Check-in may be performed by the owning
+patient (self-service) or by any active staff member (`dental_assistant`, `admin`); see
+`index/roles-and-rbac.md`. The analytics, suspension/reinstatement and audit-log-reading rows of
+this question remain open and are owned by `F-13`, `F-12` and `F-15` respectively.
+
 ## OQ-22 — No measurable non-functional targets
 
 **Status: decided 2026-10-29 for F-02.** Passwords use Argon2id with a minimum length of 12
@@ -282,6 +317,34 @@ surface.
 **Affects:** `F-07` (enum value), `F-02`, `index/glossary.md`
 **Decision needed:** either specify the QR flow (issue, render, scan, verify, expiry) or drop `qr` from
 the enum.
+
+## OQ-24 — Nobody owns the `no_show` sweep for unattended appointments
+
+**Problem:** `FR-CHKIN-02` only sets `no_show` when a patient or staff member *attempts* a check-in
+after the window has passed. An appointment that nobody checks in at all stays `confirmed` forever,
+so it still appears as an expected arrival in the staff appointment list, it is never counted as a
+no-show by the analytics no-show rate (`OQ-17`), and it occupies a slot in Master View (`F-09`).
+Resolving this needs a scheduled job, and the codebase has no scheduler of any kind.
+
+**Affects:** `F-05` (lazy `no_show` transition), `F-09` (Master View), `F-13` (no-show rate)
+**Decision needed:** decide whether a sweep exists, who runs it, and at what point after the window
+an unattended appointment is marked as a no-show. The natural owner is `F-14`, which already
+requires cron infrastructure for the daily 08:00 reminder (`FR-NOTIF-02`).
+
+**Status: open.** `F-05` proceeds with the lazy transition documented in
+`features/F-05-checkin-and-late-handling.md`. This entry records the gap so it is not mistaken for
+a solved requirement.
+
+## OQ-25 — Declining a reschedule cancels a `no_show` appointment
+
+**Problem:** `FR-CHKIN-03` requires declining a reschedule to cancel the appointment, but `FR-RESCH-07`
+refuses cancelling an already-terminal appointment, and `no_show` is terminal. The two features
+appeared to conflict.
+**Affects:** `F-05` (`FR-CHKIN-03`) · `F-06` (`FR-RESCH-07`)
+**Status: decided 2026-11-22.** Cancelling a `no_show` appointment is the only permitted terminal
+transition, used exclusively by the decline-reschedule path. It uses the seeded system cancellation
+reason (`reason_id ...0099`, `is_system = true`) and audits with `details.path = "decline_reschedule"`.
+All other cancels remain refused on `no_show`.
 
 ---
 

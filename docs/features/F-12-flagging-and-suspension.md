@@ -37,7 +37,7 @@ The reschedule logic that triggers flagging (`F-06`), analytics aggregation (`F-
 
 | ID | Requirement | API |
 |---|---|---|
-| `FR-MOD-01` | A system trigger (e.g. the `BR-02` breach from `F-06`) creates a `SuspensionRecord` with `triggered_by = system`, `outcome = pending` | → `F-06` |
+| `FR-MOD-01` | A system trigger (e.g. the `BR-02` breach from `F-06`) creates a `SuspensionRecord` with `triggered_by = system`, `outcome = pending` | → `F-06` — **implemented** by `F-06`; the account is also set to `flagged` (`OQ-10` narrow slice) |
 | `FR-MOD-07` | Staff can raise a flag manually with `triggered_by = staff` and a free-text reason | `PATCH /accounts/:id/suspend` |
 | `FR-MOD-02` | `/accounts/flagged` lists accounts with an unreviewed record | `GET /accounts/flagged` |
 | `FR-MOD-03` | Suspend sets `account_status = suspended`, stores `suspension_reason`, and records reviewer, timestamp and outcome | `PATCH /accounts/:id/suspend` |

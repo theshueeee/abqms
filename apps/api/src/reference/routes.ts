@@ -35,5 +35,18 @@ export function createReferenceRouter(): Router {
     }
   });
 
+  router.get("/cancellation-reasons", requireAuth(), async (_request, response) => {
+    try {
+      const reasons = await prisma.cancellationReason.findMany({
+        where: { is_active: true, is_system: false },
+        orderBy: { reason_text: "asc" },
+      });
+      response.json({ cancellation_reasons: reasons });
+    } catch (error) {
+      console.error("Cancellation-reason listing failed", error);
+      response.status(500).json({ error: "Unable to list cancellation reasons" });
+    }
+  });
+
   return router;
 }

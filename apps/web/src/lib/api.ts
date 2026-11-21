@@ -2,6 +2,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly body?: unknown,
   ) {
     super(message);
   }
@@ -26,7 +27,7 @@ export async function apiRequest<T>(path: string, init: RequestInit): Promise<T>
 
   const body = (await response.json().catch(() => null)) as { error?: string } | null;
   if (!response.ok) {
-    throw new ApiError(body?.error ?? "The request could not be completed.", response.status);
+    throw new ApiError(body?.error ?? "The request could not be completed.", response.status, body);
   }
 
   return body as T;

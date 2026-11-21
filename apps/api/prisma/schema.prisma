@@ -33,6 +33,17 @@ enum BookingChannel {
   walk_in
 }
 
+enum SuspensionTrigger {
+  system
+  staff
+}
+
+enum SuspensionOutcome {
+  pending
+  suspended
+  reinstated
+}
+
 enum SessionActorType {
   patient
   staff
@@ -45,7 +56,6 @@ model Patient {
   phone_number         String
   password_hash        String
   date_of_birth        DateTime
-  reschedule_credits   Int           @default(5)
   account_status       AccountStatus @default(active)
   suspension_reason    String?
   last_known_id_type   String?
@@ -55,6 +65,9 @@ model Patient {
   sessions             Session[]
   reset_tokens         PasswordResetToken[]
   appointments         Appointment[]
+  cancelled_appointments Appointment[] @relation("AppointmentCancelledByPatient")
+  reschedule_logs      RescheduleLog[]
+  suspension_records   SuspensionRecord[]
 }
 
 model Staff {
@@ -75,6 +88,8 @@ model Staff {
   doctor_blocks  TimeBlock[] @relation("TimeBlockDoctor")
   created_blocks TimeBlock[] @relation("TimeBlockCreator")
   appointments   Appointment[] @relation("AppointmentDoctor")
+  cancelled_appointments Appointment[] @relation("AppointmentCancelledByStaff")
+  reviewed_suspensions   SuspensionRecord[] @relation("SuspensionReviewer")
 }
 
 model AppointmentType {
@@ -95,7 +110,6 @@ model Appointment {
   status               AppointmentStatus @default(confirmed)
   is_follow_up         Boolean           @default(false)
   parent_appointment_id String?          @db.Uuid
-  reschedule_count     Int               @default(0)
   cancellation_reason_id String?         @db.Uuid
   cancelled_by_patient_id String?        @db.Uuid
   cancelled_by_staff_id String?          @db.Uuid
@@ -104,8 +118,12 @@ model Appointment {
   patient              Patient           @relation(fields: [patient_id], references: [patient_id])
   appointment_type     AppointmentType   @relation(fields: [appointment_type_id], references: [appointment_type_id])
   doctor               Staff             @relation("AppointmentDoctor", fields: [doctor_staff_id], references: [staff_id])
+  cancellation_reason  CancellationReason? @relation(fields: [cancellation_reason_id], references: [reason_id])
+  cancelled_by_patient Patient?        @relation("AppointmentCancelledByPatient", fields: [cancelled_by_patient_id], references: [patient_id])
+  cancelled_by_staff   Staff?            @relation("AppointmentCancelledByStaff", fields: [cancelled_by_staff_id], references: [staff_id])
   parent_appointment   Appointment?      @relation("AppointmentFollowUp", fields: [parent_appointment_id], references: [appointment_id])
   follow_ups           Appointment[]     @relation("AppointmentFollowUp")
+  reschedule_logs      RescheduleLog[]
 
   @@index([doctor_staff_id, scheduled_datetime, status])
   @@index([patient_id, scheduled_datetime])
@@ -177,4 +195,45 @@ model AuditLog {
 
   @@index([resource, created_at])
   @@index([user_id, created_at])
+}
+
+model CancellationReason {
+  reason_id    String        @id @default(uuid()) @db.Uuid
+  reason_text  String
+  is_active    Boolean       @default(true)
+  is_system    Boolean       @default(false)
+  appointments Appointment[]
+
+  @@index([is_active, is_system])
+}
+
+model RescheduleLog {
+  reschedule_id          String      @id @default(uuid()) @db.Uuid
+  appointment_id         String      @db.Uuid
+  patient_id             String      @db.Uuid
+  old_scheduled_datetime DateTime
+  new_scheduled_datetime DateTime
+  reason                 String
+  rescheduled_at         DateTime    @default(now())
+  appointment            Appointment @relation(fields: [appointment_id], references: [appointment_id], onDelete: Cascade)
+  patient                Patient     @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+
+  @@index([patient_id, rescheduled_at])
+  @@index([appointment_id])
+}
+
+model SuspensionRecord {
+  suspension_id        String            @id @default(uuid()) @db.Uuid
+  patient_id           String            @db.Uuid
+  flagging_reason      String
+  triggered_by         SuspensionTrigger
+  flagged_at           DateTime          @default(now())
+  reviewed_by_staff_id String?           @db.Uuid
+  reviewed_at          DateTime?
+  outcome              SuspensionOutcome @default(pending)
+  admin_notes          String?
+  patient              Patient           @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  reviewed_by          Staff?            @relation("SuspensionReviewer", fields: [reviewed_by_staff_id], references: [staff_id])
+
+  @@index([patient_id, outcome])
 }

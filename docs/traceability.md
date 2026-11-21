@@ -24,8 +24,8 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `F-02` | Patient Auth & Account Recovery | complete | tested | OQ-19 (records route) | 9 | `feat(F-02)` |
 | `F-03` | Staff Provisioning & RBAC | complete | tested | — | 8 | `feat(F-03)` |
 | `F-04` | Appointment Types & PM Booking | complete | tested | — | 11 | `feat(F-04)` |
-| `F-05` | Check-in & Late Handling | blocked | built | F-06 (cancel route), queue model | 6 | `feat(F-05)` |
-| `F-06` | Reschedule & Cancellation | blocked | specified | OQ-03, OQ-09, OQ-19 | 8 | `feat(F-06)` |
+| `F-05` | Check-in & Late Handling | blocked | built | queue model | 6 | `feat(F-05)` |
+| `F-06` | Reschedule & Cancellation | complete | tested | — | 9 | `feat(F-06)` |
 | `F-07` | Walk-in Registration (OCR + Manual) | blocked | specified | OQ-04, OQ-16, OQ-20, D-05 | 10 | `feat(F-07)` |
 | `F-08` | Live Queue View (patient-facing) | blocked | specified | OQ-16, OQ-17, OQ-18 | 7 | `feat(F-08)` |
 | `F-09` | Master View & Call-Next | blocked | specified | OQ-05, OQ-11, OQ-13, OQ-18 | 9 | `feat(F-09)` |
@@ -46,7 +46,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | ID | Rule | Implemented by | Status |
 |---|---|---|---|
 | `BR-01` | 15 patients/doctor/day | removed | removed by `OQ-15` |
-| `BR-02` | <5 reschedules / rolling 30 days | `F-06`, `F-12` | ⚠ mechanism undecided (`OQ-03`) |
+| `BR-02` | <5 reschedules / rolling 30 days | `F-06`, `F-12` | implemented — counted from `RescheduleLog` (`OQ-03` decided 2026-11-22) |
 | `BR-03` | 15-minute check-in window | `F-05` | implemented — window semantics fixed in `features/F-05-checkin-and-late-handling.md` |
 | `BR-04` | AM = walk-in, PM = booked | `F-04`, `F-07` | PM `[12:00,17:00)` scheduled-time window (`OQ-06`); request not clock-gated |
 | `BR-05` | Override needs reason + audit | `F-10`, `F-13`, `F-15` | specified |
@@ -82,14 +82,14 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 |---|---|---|
 | `OQ-01` | `F-02` | decided |
 | `OQ-02` | `F-03`, `F-04`, `F-07`, `F-09`, `F-11`, `F-16` | open |
-| `OQ-03` | `F-06`, `F-12`, `F-13` | open |
+| `OQ-03` | `F-06`, `F-12`, `F-13` | decided |
 | `OQ-04` | `F-07` | open |
 | `OQ-05` | `F-09` | open |
 | `OQ-06` | `F-04`, `F-05`, `F-07` | decided |
 | `OQ-07` | `F-11`, `F-15` | decided |
 | `OQ-08` | `F-15`, `F-12`, `F-14` | open |
-| `OQ-09` | `F-06` | open |
-| `OQ-10` | `F-12`, `F-13` | open |
+| `OQ-09` | `F-06` | decided |
+| `OQ-10` | `F-12`, `F-13` | partial — decided for F-06 |
 | `OQ-11` | `F-04`, `F-05`, `F-09` | decided |
 | `OQ-12` | `F-02`, `F-14` | decided for F-02; open for F-14 |
 | `OQ-13` | `F-08`, `F-09`, `F-10` | open |
@@ -98,12 +98,13 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `OQ-16` | `F-07`, `F-08` | open |
 | `OQ-17` | `F-08`, `F-13` | open |
 | `OQ-18` | `F-08`, `F-09` | open |
-| `OQ-19` | `F-02`, `F-04`, `F-06`, `F-10`, all | partial — decided for F-04 |
+| `OQ-19` | `F-02`, `F-04`, `F-06`, `F-10`, all | partial — decided for F-04 and F-06 |
 | `OQ-20` | `F-07`, `F-14` | open |
 | `OQ-21` | `F-05`, `F-12`, `F-13`, `F-15` | decided for F-05; open for F-12/F-13/F-15 |
 | `OQ-22` | every feature | decided for F-02; open for remaining NFRs |
 | `OQ-23` | `F-07`, `F-02` | open |
 | `OQ-24` | `F-05`, `F-09`, `F-13` | open |
+| `OQ-25` | `F-05`, `F-06` | decided |
 | `D-01`…`D-06` | `F-01` (+ `F-07`, `F-14`) | open |
 
 ## 6. Functional-requirement index
@@ -171,7 +172,7 @@ whether it is done. `Status` follows the same vocabulary.
 |---|---|---|---|
 | `FR-CHKIN-01` | `POST /appointments/:id/checkin` | window boundary unit | tested |
 | `FR-CHKIN-02` | same | late → `no_show` integration | tested |
-| `FR-CHKIN-03` | `PATCH …/cancel` | decline → cancelled | specified ⚠ blocked: `F-06` |
+| `FR-CHKIN-03` | `PATCH …/cancel` | decline → cancelled | tested |
 | `FR-CHKIN-04` | same | terminal-state negative | tested |
 | `FR-CHKIN-05` | → `F-09` | Master View reflects check-in | specified ⚠ blocked: queue model |
 | `FR-CHKIN-06` | same | non-owner negative | tested |
@@ -180,14 +181,15 @@ whether it is done. `Status` follows the same vocabulary.
 
 | ID | API / artifact | Test | Status |
 |---|---|---|---|
-| `FR-RESCH-01` | `PATCH /appointments/:id/reschedule` | rolling-window unit (blocked: `OQ-03`) | open ⚠ |
-| `FR-RESCH-02` | `RescheduleLog` | integration | specified |
-| `FR-RESCH-03` | → `F-12` | breach → flag integration | specified ⚠ |
-| `FR-RESCH-04` | `PATCH …/cancel` | missing-reason negative | specified  |
-| `FR-RESCH-05` | `cancelled_by_*` | actor-exclusivity unit | specified |
-| `FR-RESCH-06` | `PATCH …/reschedule` | new-slot validity | specified |
-| `FR-RESCH-07` | `PATCH …/cancel` | double-cancel negative | specified |
-| `FR-RESCH-08` | both | ownership negative | specified |
+| `FR-RESCH-01` | `PATCH /appointments/:id/reschedule` | rolling-window unit + breach integration | tested |
+| `FR-RESCH-02` | `RescheduleLog` | integration | tested |
+| `FR-RESCH-03` | → `F-12` | breach → flag integration | tested |
+| `FR-RESCH-04` | `PATCH …/cancel` | missing-reason negative | tested |
+| `FR-RESCH-05` | `cancelled_by_*` | actor-exclusivity unit | tested |
+| `FR-RESCH-06` | `PATCH …/reschedule` | new-slot validity | tested |
+| `FR-RESCH-07` | `PATCH …/cancel` | double-cancel negative | tested |
+| `FR-RESCH-08` | both | ownership negative | tested |
+| `FR-RESCH-09` | `GET /appointments/policy-limits` | allowance read-model integration | tested |
 
 ### `F-07` Walk-in Registration — `features/F-07-walkin-registration-ocr.md`
 
@@ -258,7 +260,7 @@ whether it is done. `Status` follows the same vocabulary.
 
 | ID | API / artifact | Test | Status |
 |---|---|---|---|
-| `FR-MOD-01` | → `F-06` | `BR-02` breach integration | specified ⚠ |
+| `FR-MOD-01` | → `F-06` | `BR-02` breach integration | tested |
 | `FR-MOD-02` | `GET /accounts/flagged` | queue listing integration | specified |
 | `FR-MOD-03` | `PATCH /accounts/:id/suspend` | integration | specified ⚠ |
 | `FR-MOD-04` | `PATCH /accounts/:id/reinstate` | integration | specified ⚠ |

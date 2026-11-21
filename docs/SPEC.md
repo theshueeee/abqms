@@ -64,8 +64,8 @@ visibility. DentaQueue provides both in one system.
 
 ## Spec status
 
-- 39 files; 16 are feature delivery units (`F-01`…`F-16`).
-- 23 open questions (`OQ-01`…`OQ-23`) and 6 stack decisions (`D-01`…`D-06`) are listed in
+- 41 files; 16 are feature delivery units (`F-01`…`F-16`).
+- 25 open questions (`OQ-01`…`OQ-25`) and 6 stack decisions (`D-01`…`D-06`) are listed in
   `requirements/open-questions.md`; several block their feature, none block the whole spec.
 - Superseded monolith kept verbatim at `archive/SPEC-v1-monolith.md` for reference only.
 - This router is capped at ~80 lines. New content goes in a linked file, never here.

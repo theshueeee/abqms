@@ -19,6 +19,7 @@ let patientCookie: string;
 let staffCookie: string;
 let otherPatientId: string;
 let otherPatientCookie: string;
+let cancellationReasonId: string;
 
 const CHECKIN_SLOT = "2030-02-10T05:00:00.000Z"; // 13:00 Asia/Kuala_Lumpur
 
@@ -42,6 +43,8 @@ async function withClinicNow<T>(iso: string, run: () => Promise<T>): Promise<T> 
 }
 
 // Creates an appointment directly so check-in tests control the exact schedule.
+// A `cancelled` row must satisfy the cancel contract (OQ-09): a reason and
+// exactly one actor are enforced by database CHECK constraints.
 async function createAppointment(
   scheduledDatetime: string,
   ownerPatientId: string,
@@ -55,6 +58,12 @@ async function createAppointment(
       scheduled_datetime: new Date(scheduledDatetime),
       booking_channel: "online",
       status: status as never,
+      ...(status === "cancelled"
+        ? {
+            cancellation_reason_id: cancellationReasonId,
+            cancelled_by_patient_id: ownerPatientId,
+          }
+        : {}),
     },
   });
   return appointment.appointment_id;
@@ -145,6 +154,12 @@ before(async () => {
     },
   });
   appointmentTypeId = appointmentType.appointment_type_id;
+
+  // Seeded by the F-06 migration; used to satisfy the cancel contract (OQ-09).
+  const cancellationReason = await prisma.cancellationReason.findFirstOrThrow({
+    where: { is_active: true, is_system: false },
+  });
+  cancellationReasonId = cancellationReason.reason_id;
 });
 
 after(async () => {

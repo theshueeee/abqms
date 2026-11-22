@@ -17,7 +17,7 @@ this file instead of restating permissions. Enforcement is `BR-07` / `NFR-RBAC-0
 | Actor | Type | Can log in? | Key capabilities |
 |---|---|---|---|
 | **Patient** | Human, web portal (mobile-friendly, no install) | Yes | Sign up/login, book / reschedule / cancel appointments, walk-in registration, view live queue position (distance-to-turn), view own records |
-| **Dental Assistant** | Human, staff role `dental_assistant` | Yes | Manage queue (call next, emergency override), register walk-ins, manage doctor calendar/time-blocks, review/suspend flagged accounts, view analytics |
+| **Dental Assistant** | Human, staff role `dental_assistant` | Yes | Manage queue (call next, emergency override), register walk-ins, manage doctor calendar/time-blocks, review flagged accounts (suspension is admin-only), view analytics |
 | **Admin** | Human, staff role `admin` | Yes | Everything a Dental Assistant can do, plus provision staff accounts (`provisioned_by` self-reference) |
 | **OCR** | Internal system actor | No | Auto-extracts patient data from ID during walk-in registration |
 | **Email (Resend)** | External system actor | No | Delivers booking confirmations and reminders |
@@ -43,7 +43,8 @@ this file instead of restating permissions. Enforcement is `BR-07` / `NFR-RBAC-0
 | Call next | ❌ | ✅ | ✅ | `POST /queue/call-next` |
 | Emergency override | ❌ | ✅ | ✅ | `POST /queue/emergency-override` |
 | Time-block management | read-only | ✅ | ✅ | `api/timeblocks.md` |
-| Flagged accounts / suspend / reinstate | ❌ | ✅ | ✅ | `api/accounts.md` |
+| Suspension review lists (flagged / suspended) | ❌ | ✅ view | ✅ view | `api/accounts.md` |
+| Suspend / reinstate an account | ❌ | ❌ | ✅ | `PATCH /accounts/:id/suspend`, `PATCH /accounts/:id/reinstate` |
 | Analytics dashboard | ❌ | ✅ (`OQ-21`) | ✅ | `GET /analytics/dashboard` |
 | Audit logs | ❌ | ✅ | ✅ | `GET /audit-logs` |
 

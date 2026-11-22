@@ -1,14 +1,14 @@
 ---
 id: F-12
 title: Flagging & Suspension Review
-spec_status: blocked
-delivery_status: open
-blocked_by: [OQ-10, OQ-21]
+spec_status: complete
+delivery_status: tested
+blocked_by: []
 parent: docs/SPEC.md
 related: [api/accounts.md, data-model/moderation.md, features/F-06-reschedule-and-cancel.md]
 rules: [BR-02, BR-05, BR-07]
 depends_on: [F-03, F-06]
-last_verified: 2026-09-15
+last_verified: 2026-11-22
 ---
 
 # F-12 — Flagging & Suspension Review
@@ -26,12 +26,16 @@ effect of suspension on the patient's capabilities.
 
 The reschedule logic that triggers flagging (`F-06`), analytics aggregation (`F-13`).
 
-## Blockers
+## Resolved decisions (2026-11-22)
 
-- `OQ-10` — `Patient.account_status` (`active`/`suspended`/`flagged`) and
-  `SuspensionRecord.outcome` (`pending`/`suspended`/`reinstated`) have **no written mapping**, and two of
-  the three documented signals (suspicious cancellations, override abuse) have **no numeric threshold**.
-- `OQ-21` — whether suspension requires `admin` rather than any staff member is unstated.
+- `OQ-10` — status↔outcome mapping is `pending ⇒ flagged`, `suspended ⇒ suspended`,
+  `reinstated ⇒ active` (enforced in `apps/api/src/moderation/mapping.ts`). Only `BR-02` has a numeric
+  trigger; suspicious cancellations and override abuse are manual-review-only.
+- `OQ-21` — suspend/reinstate are **admin only** (`BR-07`); the pending/suspended review lists are
+  readable by any staff member.
+
+Delivered in `apps/api/src/accounts/routes.ts` mounted at `/api/accounts` and in the staff compliance
+UI at `/staff/compliance`.
 
 ## Requirements
 
@@ -46,16 +50,18 @@ The reschedule logic that triggers flagging (`F-06`), analytics aggregation (`F-
 | `FR-MOD-06` | A suspended patient cannot log in, book, reschedule or register a walk-in | all patient routes |
 | `FR-MOD-08` | Review actions are audited (`BR-06`) | → `F-15` |
 | `FR-MOD-09` | Emergency-override frequency is available as an abuse signal for reviewers (`BR-05`) | → `F-13` |
+| `FR-MOD-10` | `/accounts/suspended` lists accounts under an active suspension for reinstatement | `GET /accounts/suspended` |
+| `FR-MOD-11` | The client can read the current actor's `{ id, role }` to gate admin-only actions | `GET /auth/me` |
 
 ## Acceptance criteria
 
 1. **Given** a patient breaching the reschedule limit, **when** the flag commits, **then** an unreviewed
    record appears in `/accounts/flagged` and the account shows the corresponding status per `OQ-10`'s
    mapping.
-2. **Given** a flagged account, **when** staff suspend it with notes, **then** `account_status` is
+2. **Given** a flagged account, **when** an admin suspends it with notes, **then** `account_status` is
    `suspended`, `suspension_reason` is set, and reviewer fields are populated.
-3. **Given** a suspended patient, **when** they attempt to book, **then** the request is refused.
-4. **Given** a suspended account, **when** staff reinstate it, **then** the patient can book again and the
+3. **Given** a suspended patient, **when** they attempt to book or log in, **then** the request is refused.
+4. **Given** a suspended account, **when** an admin reinstates it, **then** the patient can book again and the
    record's outcome reflects reinstatement (not deletion).
 5. **Given** a review action, **when** the audit trail is read, **then** the actor and timestamp are
    recorded.
@@ -64,15 +70,17 @@ The reschedule logic that triggers flagging (`F-06`), analytics aggregation (`F-
 
 | Level | What | Fixtures |
 |---|---|---|
-| Unit | status ↔ outcome mapping transitions once `OQ-10` is fixed | none |
-| Integration | `BR-02` breach → flag → suspend → reinstate cycle | `patient-repeat-rescheduler` |
-| Integration | suspended patient blocked on every patient-facing write route | `patient-suspended` |
-| Integration | audit rows for suspend and reinstate | `staff-assistant` |
-| Negative | reinstate without a record; double suspend | `patient-suspended` |
+| Unit | status ↔ outcome mapping transitions (`OQ-10`) | `apps/api/test/accounts.integration.test.ts` (no DB) |
+| Integration | pending/suspended review lists; role gating (patient ❌, assistant view ✅, admin action ✅) | `accounts.integration.test.ts` |
+| Integration | suspend consumes the pending flag and records reviewer, reason, notes, audit | flagged patient + admin |
+| Integration | reinstate returns account to active and records audited outcome | suspended patient + admin |
+| Integration | suspended patient cannot log in; pre-existing session blocked on booking (`FR-MOD-06`) | suspended patient |
+| Negative | suspend without a pending flag; double suspend; reinstate without a suspension | clean / suspended patient |
+| UI (Cypress) | staff compliance queue renders, suspends, empty states, assistant hides actions | `cypress/e2e/f12-compliance-ui.cy.ts` |
 
 ## Open questions
 
-`OQ-10` (blocks the mapping and two of three signals) · `OQ-21`.
+Resolved: `OQ-10`, `OQ-21` (see `requirements/open-questions.md` and `api/accounts.md`).
 
 ## Commit scope
 

@@ -1,12 +1,12 @@
 ---
 id: F-11
 title: Time-Block Management
-spec_status: specified
+spec_status: complete
 delivery_status: tested
 parent: docs/SPEC.md
 related: [api/timeblocks.md, data-model/scheduling.md, features/F-04-appointment-types-and-booking.md]
 depends_on: [F-03]
-last_verified: 2026-11-21
+last_verified: 2026-11-22
 ---
 
 # F-11 — Time-Block Management

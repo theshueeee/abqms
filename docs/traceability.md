@@ -24,13 +24,13 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `F-02` | Patient Auth & Account Recovery | complete | tested | OQ-19 (records route) | 9 | `feat(F-02)` |
 | `F-03` | Staff Provisioning & RBAC | complete | tested | — | 8 | `feat(F-03)` |
 | `F-04` | Appointment Types & PM Booking | complete | tested | — | 11 | `feat(F-04)` |
-| `F-05` | Check-in & Late Handling | blocked | built | queue model | 6 | `feat(F-05)` |
+| `F-05` | Check-in & Late Handling | complete | built | FR-CHKIN-05 (queue model) | 6 | `feat(F-05)` |
 | `F-06` | Reschedule & Cancellation | complete | tested | — | 9 | `feat(F-06)` |
 | `F-07` | Walk-in Registration (OCR + Manual) | blocked | specified | OQ-04, OQ-16, OQ-20, D-05 | 10 | `feat(F-07)` |
 | `F-08` | Live Queue View (patient-facing) | blocked | specified | OQ-16, OQ-17, OQ-18 | 7 | `feat(F-08)` |
 | `F-09` | Master View & Call-Next | blocked | specified | OQ-05, OQ-11, OQ-13, OQ-18 | 9 | `feat(F-09)` |
 | `F-10` | Emergency Override | blocked | specified | OQ-13, OQ-19 | 7 | `feat(F-10)` |
-| `F-11` | Time-Block Management | specified | tested | — | 7 | `feat(F-11)` |
+| `F-11` | Time-Block Management | complete | tested | — | 7 | `feat(F-11)` |
 | `F-12` | Flagging & Suspension Review | complete | tested | — | 11 | `feat(F-12)` |
 | `F-13` | Analytics Dashboard | blocked | specified | OQ-17, OQ-21, OQ-22 | 8 | `feat(F-13)` |
 | `F-14` | Notifications | blocked | specified | OQ-12, OQ-14, D-06 | 8 | `feat(F-14)` |
@@ -50,8 +50,8 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `BR-03` | 15-minute check-in window | `F-05` | implemented — window semantics fixed in `features/F-05-checkin-and-late-handling.md` |
 | `BR-04` | AM = walk-in, PM = booked | `F-04`, `F-07` | PM `[12:00,17:00)` scheduled-time window (`OQ-06`); request not clock-gated |
 | `BR-05` | Override needs reason + audit | `F-10`, `F-13`, `F-15` | specified |
-| `BR-06` | Audit is silent and non-blocking | `F-15` | specified |
-| `BR-07` | Server-side RBAC on every route | `F-03` | specified |
+| `BR-06` | Audit is silent and non-blocking | `F-15` | implemented — write path (`recordAudit` on booking/reschedule/cancel/timeblock/override) on every audited route; read UI is `F-15` |
+| `BR-07` | Server-side RBAC on every route | `F-03` | implemented — `requireAuth` guard on every route + 401/403 sweep tested |
 | `BR-08` | Doctors are not system users | `F-03`, `F-16` | ⚠ model conflict (`OQ-02`) |
 
 ## 3. Non-functional coverage
@@ -60,8 +60,8 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 |---|---|---|---|
 | `NFR-RT-01` | Live queue / Master View feel live | `F-08`, `F-09` | ⚠ transport + budget missing (`OQ-18`) |
 | `NFR-AUTO-01` | Notifications fire automatically | `F-14` | specified |
-| `NFR-AUD-01` | Audit logging silent, non-blocking | `F-15` (resilience test) | specified |
-| `NFR-RBAC-01` | RBAC enforced server-side everywhere | `F-03` (guard sweep) | specified |
+| `NFR-AUD-01` | Audit logging silent, non-blocking | `F-15` (resilience test) | implemented — write path; resilience test with `F-15` |
+| `NFR-RBAC-01` | RBAC enforced server-side everywhere | `F-03` (guard sweep) | verified — `requireAuth` guard + 401/403 sweep tested |
 | `NFR-UX-01` | Call-next is a single click | `F-09` | specified |
 | `NFR-UX-02` | Browser-based, mobile-friendly, no install | all UI features | specified |
 | `NFR-PERF-01…03`, `NFR-SEC-01…05`, `NFR-TEST-01`, `NFR-UX-03`, `NFR-OPS-01` | Not yet written | — | ⚠ undefined (`OQ-22`) |
@@ -98,7 +98,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `OQ-16` | `F-07`, `F-08` | open |
 | `OQ-17` | `F-08`, `F-13` | open |
 | `OQ-18` | `F-08`, `F-09` | open |
-| `OQ-19` | `F-02`, `F-04`, `F-06`, `F-10`, all | partial — decided for F-04 and F-06 |
+| `OQ-19` | `F-02`, `F-04`, `F-06`, `F-10`, all | decided for F-04, F-06, F-12; open elsewhere |
 | `OQ-20` | `F-07`, `F-14` | open |
 | `OQ-21` | `F-05`, `F-12`, `F-13`, `F-15` | decided for F-05/F-12; open for F-13/F-15 |
 | `OQ-22` | every feature | decided for F-02; open for remaining NFRs |

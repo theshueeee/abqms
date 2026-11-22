@@ -17,6 +17,7 @@ Owns: patient authentication, password recovery, staff provisioning, and the pat
 | `POST` | `/auth/login` | public (patient \| staff) | Authenticate; **role resolved server-side** | `F-02`, `F-03` |
 | `POST` | `/auth/forgot-password` | public | Start password reset | `F-02` |
 | `POST` | `/auth/reset-password` | public (token) | Complete password reset | `F-02` |
+| `GET` | `/auth/me` | authenticated (patient \\| staff) | Current actor id + role | `F-12` (`OQ-19` partial) |
 | `POST` | `/auth/staff/create` | **admin only** (`BR-07`) | Provision a staff account | `F-03` |
 
 ## Requirements

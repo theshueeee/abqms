@@ -31,7 +31,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `F-09` | Master View & Call-Next | blocked | specified | OQ-05, OQ-11, OQ-13, OQ-18 | 9 | `feat(F-09)` |
 | `F-10` | Emergency Override | blocked | specified | OQ-13, OQ-19 | 7 | `feat(F-10)` |
 | `F-11` | Time-Block Management | specified | tested | — | 7 | `feat(F-11)` |
-| `F-12` | Flagging & Suspension Review | blocked | specified | OQ-10, OQ-21 | 9 | `feat(F-12)` |
+| `F-12` | Flagging & Suspension Review | complete | tested | — | 11 | `feat(F-12)` |
 | `F-13` | Analytics Dashboard | blocked | specified | OQ-17, OQ-21, OQ-22 | 8 | `feat(F-13)` |
 | `F-14` | Notifications | blocked | specified | OQ-12, OQ-14, D-06 | 8 | `feat(F-14)` |
 | `F-15` | Audit Logging | blocked | specified | OQ-08, OQ-22 | 8 | `feat(F-15)` |
@@ -89,7 +89,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `OQ-07` | `F-11`, `F-15` | decided |
 | `OQ-08` | `F-15`, `F-12`, `F-14` | open |
 | `OQ-09` | `F-06` | decided |
-| `OQ-10` | `F-12`, `F-13` | partial — decided for F-06 |
+| `OQ-10` | `F-12`, `F-13` | decided |
 | `OQ-11` | `F-04`, `F-05`, `F-09` | decided |
 | `OQ-12` | `F-02`, `F-14` | decided for F-02; open for F-14 |
 | `OQ-13` | `F-08`, `F-09`, `F-10` | open |
@@ -100,7 +100,7 @@ The audit trail for the spec→build loop. When a feature is finished and its te
 | `OQ-18` | `F-08`, `F-09` | open |
 | `OQ-19` | `F-02`, `F-04`, `F-06`, `F-10`, all | partial — decided for F-04 and F-06 |
 | `OQ-20` | `F-07`, `F-14` | open |
-| `OQ-21` | `F-05`, `F-12`, `F-13`, `F-15` | decided for F-05; open for F-12/F-13/F-15 |
+| `OQ-21` | `F-05`, `F-12`, `F-13`, `F-15` | decided for F-05/F-12; open for F-13/F-15 |
 | `OQ-22` | every feature | decided for F-02; open for remaining NFRs |
 | `OQ-23` | `F-07`, `F-02` | open |
 | `OQ-24` | `F-05`, `F-09`, `F-13` | open |
@@ -261,14 +261,16 @@ whether it is done. `Status` follows the same vocabulary.
 | ID | API / artifact | Test | Status |
 |---|---|---|---|
 | `FR-MOD-01` | → `F-06` | `BR-02` breach integration | tested |
-| `FR-MOD-02` | `GET /accounts/flagged` | queue listing integration | specified |
-| `FR-MOD-03` | `PATCH /accounts/:id/suspend` | integration | specified ⚠ |
-| `FR-MOD-04` | `PATCH /accounts/:id/reinstate` | integration | specified ⚠ |
-| `FR-MOD-05` | `admin_notes` | integration | specified |
-| `FR-MOD-06` | all patient write routes | suspended-blocked sweep | specified ⚠ |
-| `FR-MOD-07` | suspend | manual-flag integration | specified |
-| `FR-MOD-08` | audit hook | integration | specified |
-| `FR-MOD-09` | → `F-13` | override-signal query test | specified |
+| `FR-MOD-02` | `GET /accounts/flagged` | queue listing integration | tested |
+| `FR-MOD-03` | `PATCH /accounts/:id/suspend` | integration | tested |
+| `FR-MOD-04` | `PATCH /accounts/:id/reinstate` | integration | tested |
+| `FR-MOD-05` | `admin_notes` | integration | tested |
+| `FR-MOD-06` | all patient write routes | suspended-blocked sweep | tested |
+| `FR-MOD-07` | suspend | manual-flag integration | tested |
+| `FR-MOD-08` | audit hook | integration | tested |
+| `FR-MOD-09` | → `F-13` | override-signal query test | open (F-13) |
+| `FR-MOD-10` | `GET /accounts/suspended` | suspended listing integration | tested |
+| `FR-MOD-11` | `GET /auth/me` | role-gating integration | tested |
 
 ### `F-13` Analytics Dashboard — `features/F-13-analytics.md`
 

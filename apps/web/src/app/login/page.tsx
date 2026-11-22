@@ -60,7 +60,7 @@ export default function LoginPage() {
         method: "POST",
         body: JSON.stringify({ email: email.trim(), password }),
       });
-      window.location.assign(body.user?.role === "patient" ? "/patient/dashboard" : "/staff");
+      window.location.assign(body.user?.role === "patient" ? "/patient/dashboard" : "/staff/compliance");
     } catch (requestError) {
       setError(requestError instanceof ApiError && requestError.status === 429 ? "Too many attempts. Try again later." : requestError instanceof ApiError ? requestError.message : "Unable to log in. Check your details and try again.");
     } finally {

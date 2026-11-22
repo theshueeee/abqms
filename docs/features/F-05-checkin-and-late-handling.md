@@ -1,14 +1,14 @@
 ---
 id: F-05
 title: Check-in & Late Handling
-spec_status: blocked
+spec_status: complete
 delivery_status: built
-blocked_by: [F-06, queue model]
+blocked_by: [queue model]
 parent: docs/SPEC.md
 related: [api/appointments.md, index/business-rules.md, features/F-06-reschedule-and-cancel.md]
 rules: [BR-03]
 depends_on: [F-04]
-last_verified: 2026-11-21
+last_verified: 2026-11-22
 ---
 
 # F-05 — Check-in & Late Handling
@@ -28,11 +28,10 @@ The reschedule transaction itself (`F-06`), AM walk-in registration (`F-07`).
 
 ## Blockers
 
-Resolved: `OQ-14` (timezone) and `OQ-21` (check-in actor). Remaining blockers are dependency
-blocks, not open questions:
+Resolved: `OQ-14` (timezone), `OQ-21` (check-in actor), and the `F-06` dependency (the decline path
+`FR-CHKIN-03` is implemented and tested). The remaining blocker is a dependency block, not an open
+question:
 
-- `F-06` — the reschedule transaction and `PATCH /appointments/:id/cancel` do not exist yet, so the
-  decline path (`FR-CHKIN-03`) cannot be completed.
 - The **queue model** — `QueueTicket` does not exist in the data model, so a check-in cannot yet
   create or project a queue entry (`FR-CHKIN-05`). The `queue_number` format is also undecided
   (`OQ-16`).

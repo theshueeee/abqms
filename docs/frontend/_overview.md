@@ -38,6 +38,7 @@ Figma. The individual page files preserve the visual observations and the implem
 | Patient Booking — Date/Time | [6-214](https://www.figma.com/proto/4vzskzwnRHQKcnW11Tqubg/DentaQueue?node-id=6-214&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1) | `/patient/book` | Patient | F-04 | implemented; server-side service/doctor defaults + availability/booking Cypress pass |
 | Patient Reschedule | — | `/patient/reschedule` | Patient | F-06 | implemented; shared slot picker, limit-exceeded state and Cypress pass |
 | Patient Cancel | — | `/patient/cancel` | Patient | F-06 | implemented; reason select, actor contract and Cypress pass |
+| Staff Compliance Review | — | `/staff/compliance` | Staff | F-12 | implemented; suspend/reinstate queue, admin-only actions, empty/error/loading states and Cypress pass (F-12) |
 | Remaining prototype frames | — | — | — | — | pending inspection |
 
 ## Delivery rule

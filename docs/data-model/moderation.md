@@ -25,9 +25,11 @@ Entities: `SuspensionRecord`, `CancellationReason`.
 | `outcome` | Enum(`pending`, `suspended`, `reinstated`) | |
 | `admin_notes` | String? | |
 
-**Mapping gap:** `Patient.account_status` is `Enum(active, suspended, flagged)` while this
-`outcome` is `Enum(pending, suspended, reinstated)`. The written mapping between the two is
-undefined (does `pending` ⇒ `flagged`? does `reinstated` ⇒ `active`?) — `OQ-10`.
+**Mapping (OQ-10, decided 2026-11-22):** `SuspensionRecord.outcome` and `Patient.account_status` describe
+the same compliance state machine. `pending ⇒ flagged`, `suspended ⇒ suspended`, `reinstated ⇒ active`.
+The projection is enforced by `apps/api/src/moderation/mapping.ts` and applied by the F-12 review routes;
+a suspended patient's fresh login is refused and any pre-existing session is rejected by the auth
+middleware (`FR-MOD-06`).
 
 **Narrow slice decided 2026-11-22 (`OQ-10`).** `F-06` creates the first `SuspensionRecord`: a
 `BR-02` breach writes `triggered_by = system`, `outcome = pending`, and sets
@@ -56,5 +58,5 @@ Seeded reasons: `Schedule conflict`, `Feeling unwell`, `No longer needed`, `Othe
 
 Compliance review watches for: suspicious cancellations · excessive reschedules · emergency-override
 abuse (`BR-05` logging exists precisely to support the third one). Only the reschedule signal has a
-numeric trigger today (`BR-02`, fewer than 5 per 30 days); the other two have no threshold defined —
-`OQ-10`.
+numeric trigger (`BR-02`, fewer than 5 per 30 days); the other two are **manual-review-only**
+(`OQ-10`, decided 2026-11-22) — a reviewer raises a staff flag instead of a threshold firing.

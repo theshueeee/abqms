@@ -134,8 +134,11 @@ at the database level too.
 (`pending`/`suspended`/`reinstated`) have no written mapping. Only the reschedule signal has a numeric
 trigger — "suspicious cancellations" and "emergency-override abuse" have no thresholds at all.
 **Affects:** `F-12` (`FR-MOD-01`…`04`) · `F-13` (`FR-AN-07`)
-**Decision needed:** state the mapping explicitly and define thresholds, or declare those two signals
-manual-review-only.
+**Status: decided 2026-11-22.** The mapping is `pending ⇒ flagged`, `suspended ⇒ suspended`,
+`reinstated ⇒ active`, enforced by `apps/api/src/moderation/mapping.ts` (`mapStatusFromOutcome`).
+"Suspicious cancellations" and "emergency-override abuse" are **manual-review-only**: an admin raises a
+staff flag (`triggered_by = staff`); no numeric threshold is introduced. The reschedule signal (`BR-02`)
+remains the only automatic trigger.
 
 **Status: decided (narrow slice) 2026-11-22.** A system `BR-02` breach from `F-06` writes
 `SuspensionRecord(triggered_by = system, outcome = pending)` and sets
@@ -266,6 +269,10 @@ rate-limit, versioning, and the remaining missing-route decisions stay open.
 **Status: decided (partial) 2026-11-22.** Adds authenticated read-only `GET /cancellation-reasons`
 (returning `is_active AND NOT is_system` reasons), seeded alongside appointment types.
 
+**Status: decided (partial) 2026-11-22.** F-12 adds `GET /auth/me` returning the current actor's
+`{ id, role }` so the client can gate admin-only actions; identity/ownership enforcement stays
+server-side (`BR-07`). The patient's own records route remains open.
+
 ## OQ-20 — OCR provider, upload limits and PII retention
 
 **Problem:** `POST /walkin/ocr` is specified with no provider (`D-05`), no request format (multipart?),
@@ -288,7 +295,10 @@ failure → manual-fallback contract.
 | Audit-log reading | Spec says "staff/admin"; does that include assistants? (`FR-AUDIT-06`) |
 
 **Affects:** `F-05`, `F-12`, `F-13`, `F-15` · `index/roles-and-rbac.md`
-**Decision needed:** pin each capability to a role in `index/roles-and-rbac.md`, which is authoritative.
+**Status: partially decided 2026-11-22.** For `F-12`, suspension and reinstatement are **admin only**
+(`BR-07`); the pending (`/accounts/flagged`) and suspended (`/accounts/suspended`) review lists stay
+readable by any staff member. Check-in (`F-05`), analytics (`F-13`) and audit-log reading (`F-15`)
+remain open and are pinned when those features are delivered.
 
 **Status: partly decided 2026-11-21 — check-in only.** Check-in may be performed by the owning
 patient (self-service) or by any active staff member (`dental_assistant`, `admin`); see

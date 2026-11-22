@@ -127,6 +127,17 @@ export function createAuthRouter(): Router {
     response.status(204).send();
   });
 
+  router.get("/me", requireAuth(), async (request: AuthenticatedRequest, response) => {
+    // OQ-19 (partial): the client needs the current actor identity/role so it
+    // can gate admin-only actions; ownership is still enforced server-side.
+    response.json({
+      user: {
+        id: request.auth!.staffId ?? request.auth!.patientId!,
+        role: request.auth!.actorType === "patient" ? "patient" : request.auth!.role,
+      },
+    });
+  });
+
   router.post("/staff/create", requireAuth([StaffRole.admin]), async (request: AuthenticatedRequest, response) => {
     const input = parse(staffSchema, request.body, response);
     if (!input) return;

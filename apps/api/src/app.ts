@@ -4,6 +4,7 @@ import { createAuthRouter } from "./auth/routes";
 import { createTimeblocksRouter } from "./timeblocks/routes";
 import { createAppointmentsRouter } from "./appointments/routes";
 import { createReferenceRouter } from "./reference/routes";
+import { createAccountsRouter } from "./accounts/routes";
 
 export function createApp() {
   const app = express();
@@ -12,6 +13,7 @@ export function createApp() {
   app.use("/api/auth", createAuthRouter());
   app.use("/api/timeblocks", createTimeblocksRouter());
   app.use("/api/appointments", createAppointmentsRouter());
+  app.use("/api/accounts", createAccountsRouter());
   app.use("/api", createReferenceRouter());
 
   app.get("/api/health", async (_request, response) => {

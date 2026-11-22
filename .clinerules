@@ -75,6 +75,39 @@ as the implementation, not deferred to a later milestone.
 - Doctors are **never** login users (`BR-08`).
 - Never commit secrets; configuration comes from environment variables (`FR-SCAF-02`).
 
+## Request budget (minimize every API round-trip)
+
+Every tool call, file read, and follow-up message is a billable request. Treat them as scarce.
+
+### Per-task budget
+- **Target: ≤ 15 requests per feature task.** If you are approaching this, stop, summarize
+  what is done and what remains in `docs/PROGRESS.md`, and end the task. Do not "push through."
+- **One task = one feature.** Do not chain multiple `F-NN` features in a single session.
+- **One response = one batch.** Group all independent reads/edits that belong to the same step
+  into a single response. Never emit one tool call per message when several can be batched.
+
+### Read discipline
+- **Search before you read.** Prefer `grep`/search to locate the exact symbol or line, then read
+  only the matching file (or the cited range). Never read a whole file to find one function.
+- **Never re-read a file that is already in context** during the same task unless it changed on
+  disk since you last read it.
+- **Never read a file the current `F-NN` doc does not cite** (directly or via its `api/` /
+  `data-model/` references). If you believe you need it, state why and ask before reading.
+- Do not read the entire `docs/` tree. Follow the Read path in this file, nothing more.
+
+### Verification discipline
+- **Do not re-run a command whose result you already have** in this task.
+- **Do not run speculative checks** ("let me also verify X just in case"). Run the test plan
+  named in the feature doc, and stop.
+- If a test fails, read the failure output you already have *before* issuing another command.
+
+### Stop conditions (end the task instead of spending more requests)
+End the task and report when any of these is true:
+- The feature's `FR-*` list is implemented and its Test plan passes.
+- You are blocked on an `OQ-NN` / `D-NN` that has no recorded decision.
+- The next step would require touching a file outside the current feature's scope.
+- You have made two consecutive failed attempts at the same fix — stop and describe the blocker.
+
 ## Working notes
 
 - `docs/**`, `.clinerules` and `progress.txt` are intentionally **untracked local** working documents.
